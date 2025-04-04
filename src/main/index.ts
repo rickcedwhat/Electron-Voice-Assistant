@@ -4,9 +4,17 @@ import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import icon from '../../resources/icon.png?asset';
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
+import {
+  injectHighlightCSS,
+  handleLogin,
+  executeScript,
+  interactWithIframe,
+} from './secondary/utils';
 
 let pythonProcess: ChildProcessWithoutNullStreams; // Store the Python process object
 let mainWindow: BrowserWindow | null = null;
+let secondaryWindow: BrowserWindow | null = null;
+const thirdPartyWindows: (BrowserWindow | null)[] = []; // Array to store third-party windows
 const debugMode = true; // Set to true for debug mode
 
 function createWindow(): void {
@@ -43,6 +51,18 @@ function createWindow(): void {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
   }
 
+  mainWindow.on('closed', () => {
+    mainWindow = null;
+    if (secondaryWindow) {
+      secondaryWindow.close();
+      secondaryWindow = null;
+      thirdPartyWindows.forEach((window) => {
+        window.close();
+      });
+      thirdPartyWindows.length = 0;
+    }
+  });
+
   const pythonScriptPath = join(app.getAppPath(), 'backend', 'websocket_server.py'); // Adjust 'backend' if needed
   console.log('Python script path:', pythonScriptPath);
   pythonProcess = spawn('python', [pythonScriptPath]);
@@ -58,6 +78,89 @@ function createWindow(): void {
 
   pythonProcess.on('close', (code: number | null) => {
     console.log(`Python server process exited with code ${code}`);
+  });
+}
+
+function createSecondaryBrowser(): void {
+  secondaryWindow = new BrowserWindow({
+    width: 1500,
+    height: 1000,
+    webPreferences: {
+      nodeIntegration: false, // Keep it secure
+      contextIsolation: true,
+      // preload: join(__dirname, '../preload/secondaryPreload.js'), // Separate preload for the new window
+    },
+  });
+
+  // No initial URL load here, we'll navigate manually
+
+  secondaryWindow.on('closed', () => {
+    secondaryWindow = null;
+  });
+
+  secondaryWindow.loadURL('https://portal.mypearson.com/portal');
+  if (is.dev) {
+    secondaryWindow.webContents.openDevTools(); // Open DevTools here
+  }
+
+  const loginBaseURL = 'https://login.pearson.com/v1/piapi/piui/signin';
+  secondaryWindow.webContents.on('did-finish-load', () => {
+    const currentURLString = secondaryWindow!.webContents.getURL();
+    const currentURL = new URL(currentURLString);
+    const currentBaseURL = `${currentURL.origin}${currentURL.pathname}`;
+
+    // Perform login automation only on the initial URL
+    if (currentBaseURL === loginBaseURL) {
+      console.log('Attempting to log in...');
+      const username = 'andresbruck'; // Replace with the actual username
+      const password = 'Bruckstein2006'; // Replace with the actual password
+
+      executeScript(secondaryWindow, handleLogin, username, password);
+    } else {
+      executeScript(secondaryWindow, injectHighlightCSS);
+    }
+  });
+
+  secondaryWindow.webContents.setWindowOpenHandler(({ url }) => {
+    console.log('Intercepting window open event:', url);
+    if (url === 'about:blank') {
+      // carry on as usual
+      return { action: 'allow' };
+    }
+    let newWindow: BrowserWindow | null = new BrowserWindow({
+      frame: true,
+      closable: true,
+      resizable: true,
+      fullscreenable: true,
+      backgroundColor: 'black',
+      width: 1500,
+      height: 1000,
+      webPreferences: {
+        // You can configure webPreferences for the new window here if needed
+      },
+    });
+
+    newWindow.loadURL(url);
+    // if (is.dev) {
+    //   newWindow.webContents.openDevTools();
+    // }
+    thirdPartyWindows.push(newWindow); // Store the new window in the array
+
+    newWindow.on('closed', () => {
+      const index = thirdPartyWindows.indexOf(newWindow);
+      newWindow = null;
+      if (index > -1) {
+        thirdPartyWindows.splice(index, 1); // Remove the closed window from the array
+      }
+    });
+
+    newWindow.webContents.on('did-finish-load', () => {
+      executeScript(newWindow, injectHighlightCSS);
+      console.log('Injecting CSS into new window');
+      executeScript(newWindow, interactWithIframe);
+    });
+
+    return { action: 'deny' }; // Prevent the default browser window from opening
   });
 }
 
@@ -77,6 +180,28 @@ app.whenReady().then(() => {
 
   // IPC test
   ipcMain.on('ping', () => console.log('pong'));
+
+  ipcMain.on('launch-secondary-browser', () => {
+    createSecondaryBrowser();
+  });
+
+  // I don't think we ever use this
+  // ipcMain.on('execute-secondary-js', (_event, script) => {
+  //   if (secondaryWindow && secondaryWindow.webContents) {
+  //     secondaryWindow.webContents
+  //       .executeJavaScript(script)
+  //       .then((result) => {
+  //         console.log('JavaScript executed in secondary window:', result);
+  //         // Optionally send a response back to the renderer that triggered this
+  //       })
+  //       .catch((error) => {
+  //         console.error('Error executing JavaScript in secondary window:', error);
+  //         // Optionally send an error back to the renderer
+  //       });
+  //   } else {
+  //     console.log('Secondary browser window not available.');
+  //   }
+  // });
 
   createWindow();
 
