@@ -1,5 +1,6 @@
 import { Box, Container } from '@mui/material';
-import { VoiceAssistant } from './components/VoiceAssistant';
+// import { VoiceAssistant } from './components/VoiceAssistant';
+import { VoiceAssistant } from './components/VoiceAssistantNEW'; // Updated import
 import Versions from './components/Versions';
 
 function App(): JSX.Element {

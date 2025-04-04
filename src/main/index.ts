@@ -1,15 +1,17 @@
 // src/main/index.ts
-import { app, shell, BrowserWindow, ipcMain } from 'electron';
+import { app, shell, BrowserWindow, ipcMain, globalShortcut } from 'electron';
 import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import icon from '../../resources/icon.png?asset';
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 
 let pythonProcess: ChildProcessWithoutNullStreams; // Store the Python process object
+let mainWindow: BrowserWindow | null = null;
+const debugMode = true; // Set to true for debug mode
 
 function createWindow(): void {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1500,
     height: 1000,
     show: false,
@@ -24,7 +26,7 @@ function createWindow(): void {
   });
 
   mainWindow.on('ready-to-show', () => {
-    mainWindow.show();
+    mainWindow!.show();
   });
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -78,6 +80,18 @@ app.whenReady().then(() => {
 
   createWindow();
 
+  // Register a global shortcut (using a placeholder combination for now)
+  const ret = globalShortcut.register('Ctrl+Alt+C', () => {
+    console.log('Ctrl+Alt+C is pressed');
+    if (mainWindow) {
+      mainWindow.webContents.send('toggle-recording'); // Send IPC message to renderer
+    }
+  });
+
+  if (!ret) {
+    console.log('globalShortcut registration failed');
+  }
+
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
@@ -99,6 +113,14 @@ app.on('before-quit', () => {
   if (pythonProcess) {
     pythonProcess.kill();
   }
+});
+
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll(); // Unregister all shortcuts when app is quitting
+});
+
+ipcMain.handle('get-debug-mode', () => {
+  return debugMode;
 });
 
 // In this file you can include the rest of your app's specific main process
