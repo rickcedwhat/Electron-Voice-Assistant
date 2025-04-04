@@ -1,60 +1,132 @@
-import React from 'react';
-import { useVoiceRecognition } from '../hooks/useVoiceRecognition';
-import { Box, Button, Typography, CircularProgress, Alert, Paper } from '@mui/material';
-import { Mic as MicIcon, Stop as StopIcon } from '@mui/icons-material';
+// src/renderer/src/components/VoiceAssistant.tsx
+import React, { useState, useEffect, useRef } from 'react';
+import { Button, Typography, Container, Box, Alert } from '@mui/material';
+import { useMicVAD } from '@ricky0123/vad-react';
+import { encodeWAV } from '../utils';
 
 export const VoiceAssistant: React.FC = () => {
+  const [transcript, setTranscript] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
+  const websocket = useRef<WebSocket | null>(null);
+  const [recordingState, setRecordingState] = useState<'inactive' | 'recording' | null>(null);
+
   const {
-    transcript,
-    interimTranscript,
-    startListening,
-    stopListening,
-    permissionGranted,
-    isActive,
-  } = useVoiceRecognition();
+    listening,
+    errored,
+    loading,
+    userSpeaking,
+    start: startVAD,
+    pause: pauseVAD,
+  } = useMicVAD({
+    onSpeechStart: () => {
+      console.log('Speech started by VAD');
+      setTranscript(''); // Clear previous transcript when speech starts
+    },
+    onSpeechEnd: (audio) => {
+      console.log('User stopped talking');
+      if (audio && websocket.current?.readyState === WebSocket.OPEN) {
+        const wavBuffer = encodeWAV(audio, 1, 16000, 1, 16);
+
+        websocket.current?.send(wavBuffer);
+        console.log('Sent WAV audio segment to backend');
+      }
+    },
+  });
+
+  useEffect(() => {
+    const ws = new WebSocket('ws://localhost:8765');
+    websocket.current = ws;
+
+    ws.onopen = (): void => {
+      console.log('WebSocket Client Connecting');
+    };
+
+    ws.onmessage = (message: MessageEvent): void => {
+      try {
+        const data = JSON.parse(message.data as string);
+        if (data.text) {
+          setTranscript((prevTranscript) => prevTranscript + ' ' + data.text);
+        } else if (data.error) {
+          setError(data.error);
+        }
+      } catch {
+        setError('Error parsing message.');
+      }
+    };
+
+    ws.onclose = (): void => {
+      console.log('WebSocket Client Disconnected');
+    };
+
+    ws.onerror = (): void => {
+      setError('WebSocket connection error.');
+    };
+
+    return (): void => {
+      if (websocket.current?.readyState === WebSocket.OPEN) {
+        websocket.current.close();
+      }
+    };
+  }, []); // Empty dependency array for one-time setup
+
+  const startRecording = (): void => {
+    setError(null);
+    setTranscript('');
+    setRecordingState('recording');
+    startVAD();
+    console.log('VAD started');
+  };
+
+  const stopRecording = (): void => {
+    setRecordingState('inactive');
+    pauseVAD();
+    console.log('VAD paused');
+  };
 
   return (
-    <Paper elevation={2} sx={{ p: 3, m: 2 }}>
-      <Typography variant="h5" component="h2" gutterBottom>
-        Voice Assistant
-      </Typography>
-
-      {!permissionGranted && (
-        <Alert severity="warning" sx={{ mb: 2 }}>
-          Microphone permission is required. Please grant permission to use voice recognition.
-        </Alert>
-      )}
-
-      {permissionGranted && (
-        <Button
-          variant="contained"
-          startIcon={isActive ? <StopIcon /> : <MicIcon />}
-          onClick={isActive ? stopListening : startListening}
-          color={isActive ? 'secondary' : 'primary'}
-          sx={{ mb: 2 }}
-        >
-          {isActive ? 'Stop Listening' : 'Start Listening'}
-        </Button>
-      )}
-
-      {isActive && (
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <CircularProgress size={20} sx={{ mr: 1 }} />
-          <Typography variant="body2">Listening...</Typography>
+    <Container maxWidth="md">
+      <Box sx={{ my: 4 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Voice Assistant
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+          {recordingState === 'recording' ? (
+            <Button variant="contained" color="secondary" onClick={stopRecording}>
+              Stop Recording
+            </Button>
+          ) : (
+            <Button variant="contained" color="primary" onClick={startRecording}>
+              Start Recording
+            </Button>
+          )}
         </Box>
-      )}
-
-      <Box>
-        <Typography variant="h6" component="h3" gutterBottom>
-          Transcript:
-        </Typography>
-        <Typography variant="body1" paragraph sx={{ minHeight: '2.5em', whiteSpace: 'pre-wrap' }}>
-          {transcript || '...'}
-        </Typography>
-        <Typography variant="body2" sx={{ color: 'text.secondary', minHeight: '1.5em' }}>
-          <i>{interimTranscript}</i>
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+          {recordingState === 'recording' && (
+            <>
+              <Typography variant="body2">VAD Listening: {listening ? 'Yes' : 'No'}</Typography>
+              <Typography variant="body2" sx={{ ml: 2 }}>
+                User Speaking: {userSpeaking ? 'Yes' : 'No'}
+              </Typography>
+              {loading && (
+                <Typography variant="body2" sx={{ ml: 2 }}>
+                  VAD Loading...
+                </Typography>
+              )}
+              {errored && (
+                <Typography variant="body2" color="error" sx={{ ml: 2 }}>
+                  VAD Error: {errored}
+                </Typography>
+              )}
+            </>
+          )}
+        </Box>
+        {error && <Alert severity="error">{error}</Alert>}
+        <Typography variant="body1" component="p">
+          Transcript: {transcript}
         </Typography>
       </Box>
-    </Paper>
+    </Container>
   );
 };
+
+export default VoiceAssistant;
