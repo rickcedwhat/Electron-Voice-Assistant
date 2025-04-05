@@ -1,6 +1,8 @@
 import { BrowserWindow } from 'electron';
 import { BrowserID, ProcessStatus } from '../shared/types'; // Adjust the import path as necessary
 import { is } from '@electron-toolkit/utils';
+import { join } from 'path';
+import { secondaryWindows, thirdPartyWindows } from '.';
 
 interface InputEventOptions {
   bubbles: boolean;
@@ -138,7 +140,29 @@ const launchPearsonBrowser = (
     },
     mainWindow,
   );
+  const loginDummy = new SecondaryBrowser(
+    {
+      width: 800,
+      height: 500,
+      show: true,
+      webPreferences: {
+        nodeIntegration: false, // Keep it secure
+        contextIsolation: true,
+      },
+    },
+    mainWindow,
+  );
 
+  if (is.dev) {
+    loginDummy.loadURL('http://localhost:5173/companions/LoginDummy/index.html');
+  } else {
+    loginDummy.loadFile(join(__dirname, '../companions/LoginDummy/index.html'));
+  }
+  loginDummy.webContents.openDevTools();
+  loginDummy.webContents.on('did-finish-load', async () => {
+    console.log('dummy finished loading');
+    secondaryWindows.push(loginDummy);
+  });
   headlessWin.loadURL('https://portal.mypearson.com/portal');
 
   headlessWin.webContents.on('did-finish-load', async () => {
@@ -167,6 +191,7 @@ const launchPearsonBrowser = (
           ProcessStatus.COMPLETE,
         );
         headlessWin.show();
+        loginDummy.close();
       } catch {
         console.error('Login attempt failed.');
         headlessWin.sendMessageToRenderer(
@@ -189,7 +214,6 @@ export const createSecondaryBrowser = (
   securityAnswer?: string,
 ): void => {
   let secondaryWindow: SecondaryBrowser | null = null;
-  const thirdPartyWindows: SecondaryBrowser[] = [];
   switch (browserID) {
     case BrowserID.PEARSON:
       secondaryWindow = launchPearsonBrowser(mainWindow, username, password);

@@ -6,11 +6,13 @@ import icon from '../../resources/icon.png?asset';
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import { createSecondaryBrowser } from './utils';
 import { BrowserID } from '../shared/types'; // Adjust the import path as necessary
+import { SuperBrowsers } from '../main/classes/SuperBrowsers';
 
 let pythonProcess: ChildProcessWithoutNullStreams; // Store the Python process object
 let mainWindow: BrowserWindow | null = null;
-let secondaryWindow: BrowserWindow | null = null;
-const thirdPartyWindows: (BrowserWindow | null)[] = []; // Array to store third-party windows
+let secondaryBrowsers: SuperBrowsers | null;
+export const secondaryWindows: (BrowserWindow | null)[] = [];
+export const thirdPartyWindows: (BrowserWindow | null)[] = []; // Array to store third-party windows
 const debugMode = true; // Set to true for debug mode
 
 function createWindow(): void {
@@ -31,6 +33,7 @@ function createWindow(): void {
 
   mainWindow.on('ready-to-show', () => {
     mainWindow!.show();
+    secondaryBrowsers = new SuperBrowsers(mainWindow!);
   });
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -49,14 +52,13 @@ function createWindow(): void {
 
   mainWindow.on('closed', () => {
     mainWindow = null;
-    if (secondaryWindow) {
-      secondaryWindow.close();
-      secondaryWindow = null;
-      thirdPartyWindows.forEach((window) => {
-        window!.close();
-      });
-      thirdPartyWindows.length = 0;
-    }
+    secondaryWindows.forEach((window) => {
+      window!.close();
+    });
+    secondaryWindows.length = 0;
+    thirdPartyWindows.forEach((window) => {
+      window!.close();
+    });
   });
 
   const pythonScriptPath = join(app.getAppPath(), 'backend', 'websocket_server.py'); // Adjust 'backend' if needed
@@ -75,12 +77,6 @@ function createWindow(): void {
   pythonProcess.on('close', (code: number | null) => {
     console.log(`Python server process exited with code ${code}`);
   });
-}
-
-function simulateTrustedTabKeyDown() {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Tab', modifiers: [] });
-  }
 }
 
 app.whenReady().then(() => {
@@ -111,24 +107,6 @@ app.whenReady().then(() => {
   ipcMain.on('browser-window-created', (event) => {
     mainWindow?.webContents.send('browser-window-created', event);
   });
-
-  // I don't think we ever use this
-  // ipcMain.on('execute-secondary-js', (_event, script) => {
-  //   if (secondaryWindow && secondaryWindow.webContents) {
-  //     secondaryWindow.webContents
-  //       .executeJavaScript(script)
-  //       .then((result) => {
-  //         console.log('JavaScript executed in secondary window:', result);
-  //         // Optionally send a response back to the renderer that triggered this
-  //       })
-  //       .catch((error) => {
-  //         console.error('Error executing JavaScript in secondary window:', error);
-  //         // Optionally send an error back to the renderer
-  //       });
-  //   } else {
-  //     console.log('Secondary browser window not available.');
-  //   }
-  // });
 
   createWindow();
 
