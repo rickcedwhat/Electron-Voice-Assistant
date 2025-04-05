@@ -1,10 +1,11 @@
-import { Box, Button, Container } from '@mui/material';
-// import { VoiceAssistant } from './components/VoiceAssistant';
+import { Box, Button, CircularProgress, Container, Stack, Typography } from '@mui/material';
 import { VoiceAssistant } from './components/VoiceAssistantNEW'; // Updated import
 import Versions from './components/Versions';
-import { useState } from 'react';
-import { BrowserID } from '@shared/types'; // Adjust the import path as necessary
-import styles from './App.module.css'; // Import your CSS module
+import { useCallback, useEffect, useState } from 'react';
+import { BrowserID, ProcessStatus } from '@shared/types'; // Adjust the import path as necessary
+import { CheckCircleOutline as CheckCircleOutlineIcon } from '@mui/icons-material';
+
+const ipcRenderer = window.electron.ipcRenderer;
 
 interface LaunchBrowserButtonProps {
   browserID: BrowserID;
@@ -19,26 +20,70 @@ const LaunchBrowserButton: React.FC<LaunchBrowserButtonProps> = ({
   password,
   securityAnswer,
 }: LaunchBrowserButtonProps) => {
-  const [loading, setLoading] = useState(false);
-  const handleLaunch = (): void => {
-    setLoading(true);
-    window.electron.ipcRenderer.send(
-      'launch-secondary-browser',
-      browserID,
-      username,
-      password,
-      securityAnswer,
-    );
-    window.electron.ipcRenderer.on('browser-window-created', (_event, browserID) => {
-      if (browserID === BrowserID.PEARSON) {
-        setLoading(false);
-      }
-    });
-  };
+  const [status, setStatus] = useState<ProcessStatus>(ProcessStatus.INACTIVE);
+
+  const handleLaunch = useCallback(() => {
+    setStatus(ProcessStatus.LOADING);
+    ipcRenderer.send('launch-secondary-browser', browserID, username, password, securityAnswer);
+
+    const removeListener = ipcRenderer.on(
+      'browser-window-creation',
+      (_event, receivedBrowserID, processStatus) => {
+        if (receivedBrowserID === BrowserID.PEARSON) {
+          console.log(`Received process status: ${processStatus}`);
+          setStatus(processStatus);
+          if (processStatus === ProcessStatus.COMPLETE) {
+            removeListener();
+          }
+        }
+      },
+    ); // Add the listener for browser window creation
+  }, [browserID, username, password, securityAnswer, setStatus]);
+
+  useEffect(() => {
+    if (status === ProcessStatus.COMPLETE) {
+      const timer = setTimeout(() => {
+        setStatus(ProcessStatus.INACTIVE);
+      }, 5000); // Reset status after 1 seconds
+      return () => clearTimeout(timer);
+    }
+    return;
+  }, [status]);
   return (
-    <Button variant="contained" onClick={handleLaunch} disabled={loading} color="primary">
-      Log in to {browserID}
-    </Button>
+    <>
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={handleLaunch}
+        disabled={[ProcessStatus.LOADING, ProcessStatus.COMPLETE].includes(status)}
+      >
+        {browserID}
+      </Button>
+      {status === ProcessStatus.LOADING && <CircularProgress />}
+
+      {status === ProcessStatus.COMPLETE && <CheckCircleOutlineIcon color="success" />}
+      <Typography variant="body1" textTransform={'capitalize'}>
+        {status}
+      </Typography>
+      <br />
+      {/* loop through all ProcessStatus enums */}
+      {[
+        ProcessStatus.INACTIVE,
+        ProcessStatus.LOADING,
+        ProcessStatus.COMPLETE,
+        ProcessStatus.ERROR,
+      ].map((statusValue) => (
+        <Button
+          variant="contained"
+          color={statusValue === ProcessStatus.ERROR ? 'error' : 'primary'}
+          key={statusValue}
+          onClick={() => setStatus(statusValue)}
+          disabled={statusValue === status}
+        >
+          {statusValue}
+        </Button>
+      ))}
+    </>
   );
 };
 

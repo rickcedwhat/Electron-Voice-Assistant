@@ -1,5 +1,6 @@
-import { BrowserWindow, ipcMain } from 'electron';
-import { BrowserID } from '../shared/types'; // Adjust the import path as necessary
+import { BrowserWindow } from 'electron';
+import { BrowserID, ProcessStatus } from '../shared/types'; // Adjust the import path as necessary
+import { is } from '@electron-toolkit/utils';
 
 interface InputEventOptions {
   bubbles: boolean;
@@ -47,9 +48,15 @@ const removeElement = (selector: string): void => {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type RendererFunction<T extends any[]> = (...args: T) => void | (() => void);
 
-export class BrowserWithScripts extends BrowserWindow {
-  constructor(options: Electron.BrowserWindowConstructorOptions) {
+class SecondaryBrowser extends BrowserWindow {
+  private mainWindow: BrowserWindow;
+  constructor(options: Electron.BrowserWindowConstructorOptions, mainWindow: BrowserWindow) {
     super(options);
+    this.mainWindow = mainWindow;
+  }
+
+  public sendMessageToRenderer(channel: string, ...args: unknown[]): void {
+    this.mainWindow.webContents.send(channel, ...args);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -83,17 +90,24 @@ export class BrowserWithScripts extends BrowserWindow {
   }
 }
 
-export const launchPearsonBrowser = (username: string, password: string): BrowserWithScripts => {
-  const headlessWin = new BrowserWithScripts({
-    width: 1500,
-    height: 1000,
-    show: false,
-    webPreferences: {
-      nodeIntegration: false, // Keep it secure
-      contextIsolation: true,
-      //   preload: join(__dirname, 'preload.js'), // Optional preload script
+const launchPearsonBrowser = (
+  mainWindow: BrowserWindow,
+  username: string,
+  password: string,
+): SecondaryBrowser => {
+  const headlessWin = new SecondaryBrowser(
+    {
+      width: 1500,
+      height: 1000,
+      show: false,
+      webPreferences: {
+        nodeIntegration: false, // Keep it secure
+        contextIsolation: true,
+        //   preload: join(__dirname, 'preload.js'), // Optional preload script
+      },
     },
-  });
+    mainWindow,
+  );
 
   headlessWin.loadURL('https://portal.mypearson.com/portal');
   headlessWin.webContents.on('did-finish-load', async () => {
@@ -105,20 +119,88 @@ export const launchPearsonBrowser = (username: string, password: string): Browse
     // Perform login automation only on the initial URL
     if (currentBaseURL === loginBaseURL) {
       console.log('Attempting to log in...');
-      await headlessWin.waitFor(500);
-      await headlessWin.removeElement('#browserCheckerMessage');
-      await headlessWin.typeIntoInput('#username', username);
-      await headlessWin.typeIntoInput('#password', password);
-      await headlessWin.clickButton('#mainButton');
+      try {
+        await headlessWin.waitFor(500);
+        await headlessWin.removeElement('#browserCheckerMessage');
+        await headlessWin.typeIntoInput('#username', username);
+        await headlessWin.typeIntoInput('#password', password);
+        await headlessWin.clickButton('#mainButton');
 
-      // Wait for a specific condition indicating successful login
-      // This could be a navigation event, the appearance of an element, or a specific cookie
-      await new Promise((resolve) => setTimeout(resolve, 1500)); // Adjust timeout as needed
-      console.log('Login attempt completed.');
-      headlessWin.show();
-      ipcMain.emit('browser-window-created', BrowserID.PEARSON);
+        // Wait for a specific condition indicating successful login
+        // This could be a navigation event, the appearance of an element, or a specific cookie
+        await new Promise((resolve) => setTimeout(resolve, 1500)); // Adjust timeout as needed
+        console.log('Login attempt completed.');
+        headlessWin.sendMessageToRenderer(
+          'browser-window-creation',
+          BrowserID.PEARSON,
+          ProcessStatus.COMPLETE,
+        );
+        headlessWin.show();
+      } catch {
+        console.error('Login attempt failed.');
+        headlessWin.sendMessageToRenderer(
+          'browser-window-creation',
+          BrowserID.PEARSON,
+          ProcessStatus.ERROR,
+        );
+      }
     }
   });
 
   return headlessWin;
+};
+
+export const createSecondaryBrowser = (
+  mainWindow: BrowserWindow,
+  browserID: BrowserID,
+  username: string,
+  password: string,
+  securityAnswer?: string,
+): void => {
+  let secondaryWindow: SecondaryBrowser | null = null;
+  const thirdPartyWindows: SecondaryBrowser[] = [];
+  switch (browserID) {
+    case BrowserID.PEARSON:
+      secondaryWindow = launchPearsonBrowser(mainWindow, username, password);
+      console.log({ securityAnswer });
+      break;
+    default:
+      console.error('Invalid browser ID');
+      return;
+  }
+  secondaryWindow.on('closed', () => {
+    secondaryWindow = null;
+  });
+  if (is.dev) {
+    secondaryWindow.webContents.openDevTools(); // Open DevTools here
+  }
+  secondaryWindow.webContents.setWindowOpenHandler(({ url }) => {
+    console.log('Intercepting window open event:', url);
+    if (url === 'about:blank') {
+      // carry on as usual
+      return { action: 'allow' };
+    }
+    const newWindow: SecondaryBrowser = new SecondaryBrowser(
+      {
+        frame: true,
+        closable: true,
+        resizable: true,
+        fullscreenable: true,
+        backgroundColor: 'black',
+        width: 1500,
+        height: 1000,
+      },
+      mainWindow,
+    );
+    newWindow.loadURL(url);
+    thirdPartyWindows.push(newWindow); // Store the new window in the array
+    newWindow.on('closed', () => {
+      const index = thirdPartyWindows.indexOf(newWindow);
+      if (index > -1) {
+        thirdPartyWindows.splice(index, 1); // Remove the closed window from the array
+      }
+    });
+
+    return { action: 'deny' }; // Prevent the default browser window from opening
+  });
 };

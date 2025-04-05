@@ -4,7 +4,7 @@ import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import icon from '../../resources/icon.png?asset';
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
-import { BrowserWithScripts, launchPearsonBrowser } from './utils';
+import { createSecondaryBrowser } from './utils';
 import { BrowserID } from '../shared/types'; // Adjust the import path as necessary
 
 let pythonProcess: ChildProcessWithoutNullStreams; // Store the Python process object
@@ -77,59 +77,6 @@ function createWindow(): void {
   });
 }
 
-const createSecondaryBrowser = (
-  browserID: BrowserID,
-  username: string,
-  password: string,
-  securityAnswer?: string,
-): void => {
-  switch (browserID) {
-    case BrowserID.PEARSON:
-      secondaryWindow = launchPearsonBrowser(username, password);
-      console.log({ securityAnswer });
-      break;
-    default:
-      console.error('Invalid browser ID');
-      return;
-  }
-  secondaryWindow.on('closed', () => {
-    secondaryWindow = null;
-  });
-  if (is.dev) {
-    secondaryWindow.webContents.openDevTools(); // Open DevTools here
-  }
-  secondaryWindow.webContents.setWindowOpenHandler(({ url }) => {
-    console.log('Intercepting window open event:', url);
-    if (url === 'about:blank') {
-      // carry on as usual
-      return { action: 'allow' };
-    }
-    const newWindow: BrowserWithScripts = new BrowserWithScripts({
-      frame: true,
-      closable: true,
-      resizable: true,
-      fullscreenable: true,
-      backgroundColor: 'black',
-      width: 1500,
-      height: 1000,
-    });
-    newWindow.loadURL(url);
-    thirdPartyWindows.push(newWindow); // Store the new window in the array
-    newWindow.on('closed', () => {
-      const index = thirdPartyWindows.indexOf(newWindow);
-      if (index > -1) {
-        thirdPartyWindows.splice(index, 1); // Remove the closed window from the array
-      }
-    });
-
-    // newWindow.webContents.on('did-finish-load', () => {
-    //   newWindow.executeJavaScript(injectHighlightCSS);
-    // });
-
-    return { action: 'deny' }; // Prevent the default browser window from opening
-  });
-};
-
 app.whenReady().then(() => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron');
@@ -147,7 +94,7 @@ app.whenReady().then(() => {
   ipcMain.on(
     'launch-secondary-browser',
     (_event, browserID: BrowserID, username: string, password: string, securityAnswer?: string) => {
-      createSecondaryBrowser(browserID, username, password, securityAnswer);
+      createSecondaryBrowser(mainWindow!, browserID, username, password, securityAnswer);
     },
   );
 
