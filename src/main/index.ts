@@ -4,12 +4,8 @@ import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import icon from '../../resources/icon.png?asset';
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
-import {
-  injectHighlightCSS,
-  handleLogin,
-  executeScript,
-  interactWithIframe,
-} from './secondary/utils';
+import { BrowserWithScripts, launchPearsonBrowser } from './utils';
+import { BrowserID } from '../shared/types'; // Adjust the import path as necessary
 
 let pythonProcess: ChildProcessWithoutNullStreams; // Store the Python process object
 let mainWindow: BrowserWindow | null = null;
@@ -57,7 +53,7 @@ function createWindow(): void {
       secondaryWindow.close();
       secondaryWindow = null;
       thirdPartyWindows.forEach((window) => {
-        window.close();
+        window!.close();
       });
       thirdPartyWindows.length = 0;
     }
@@ -81,53 +77,34 @@ function createWindow(): void {
   });
 }
 
-function createSecondaryBrowser(): void {
-  secondaryWindow = new BrowserWindow({
-    width: 1500,
-    height: 1000,
-    webPreferences: {
-      nodeIntegration: false, // Keep it secure
-      contextIsolation: true,
-      // preload: join(__dirname, '../preload/secondaryPreload.js'), // Separate preload for the new window
-    },
-  });
-
-  // No initial URL load here, we'll navigate manually
-
+const createSecondaryBrowser = (
+  browserID: BrowserID,
+  username: string,
+  password: string,
+  securityAnswer?: string,
+): void => {
+  switch (browserID) {
+    case BrowserID.PEARSON:
+      secondaryWindow = launchPearsonBrowser(username, password);
+      console.log({ securityAnswer });
+      break;
+    default:
+      console.error('Invalid browser ID');
+      return;
+  }
   secondaryWindow.on('closed', () => {
     secondaryWindow = null;
   });
-
-  secondaryWindow.loadURL('https://portal.mypearson.com/portal');
   if (is.dev) {
     secondaryWindow.webContents.openDevTools(); // Open DevTools here
   }
-
-  const loginBaseURL = 'https://login.pearson.com/v1/piapi/piui/signin';
-  secondaryWindow.webContents.on('did-finish-load', () => {
-    const currentURLString = secondaryWindow!.webContents.getURL();
-    const currentURL = new URL(currentURLString);
-    const currentBaseURL = `${currentURL.origin}${currentURL.pathname}`;
-
-    // Perform login automation only on the initial URL
-    if (currentBaseURL === loginBaseURL) {
-      console.log('Attempting to log in...');
-      const username = 'andresbruck'; // Replace with the actual username
-      const password = 'Bruckstein2006'; // Replace with the actual password
-
-      executeScript(secondaryWindow, handleLogin, username, password);
-    } else {
-      executeScript(secondaryWindow, injectHighlightCSS);
-    }
-  });
-
   secondaryWindow.webContents.setWindowOpenHandler(({ url }) => {
     console.log('Intercepting window open event:', url);
     if (url === 'about:blank') {
       // carry on as usual
       return { action: 'allow' };
     }
-    let newWindow: BrowserWindow | null = new BrowserWindow({
+    const newWindow: BrowserWithScripts = new BrowserWithScripts({
       frame: true,
       closable: true,
       resizable: true,
@@ -135,38 +112,24 @@ function createSecondaryBrowser(): void {
       backgroundColor: 'black',
       width: 1500,
       height: 1000,
-      webPreferences: {
-        // You can configure webPreferences for the new window here if needed
-      },
     });
-
     newWindow.loadURL(url);
-    // if (is.dev) {
-    //   newWindow.webContents.openDevTools();
-    // }
     thirdPartyWindows.push(newWindow); // Store the new window in the array
-
     newWindow.on('closed', () => {
       const index = thirdPartyWindows.indexOf(newWindow);
-      newWindow = null;
       if (index > -1) {
         thirdPartyWindows.splice(index, 1); // Remove the closed window from the array
       }
     });
 
-    newWindow.webContents.on('did-finish-load', () => {
-      executeScript(newWindow, injectHighlightCSS);
-      console.log('Injecting CSS into new window');
-      executeScript(newWindow, interactWithIframe);
-    });
+    // newWindow.webContents.on('did-finish-load', () => {
+    //   newWindow.executeJavaScript(injectHighlightCSS);
+    // });
 
     return { action: 'deny' }; // Prevent the default browser window from opening
   });
-}
+};
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron');
@@ -181,8 +144,19 @@ app.whenReady().then(() => {
   // IPC test
   ipcMain.on('ping', () => console.log('pong'));
 
-  ipcMain.on('launch-secondary-browser', () => {
-    createSecondaryBrowser();
+  ipcMain.on(
+    'launch-secondary-browser',
+    (_event, browserID: BrowserID, username: string, password: string, securityAnswer?: string) => {
+      createSecondaryBrowser(browserID, username, password, securityAnswer);
+    },
+  );
+
+  ipcMain.handle('get-debug-mode', () => {
+    return debugMode;
+  });
+
+  ipcMain.on('browser-window-created', (event) => {
+    mainWindow?.webContents.send('browser-window-created', event);
   });
 
   // I don't think we ever use this
@@ -242,10 +216,6 @@ app.on('before-quit', () => {
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll(); // Unregister all shortcuts when app is quitting
-});
-
-ipcMain.handle('get-debug-mode', () => {
-  return debugMode;
 });
 
 // In this file you can include the rest of your app's specific main process

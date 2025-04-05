@@ -4,7 +4,7 @@ import eslintPluginReact from 'eslint-plugin-react';
 import eslintPluginReactHooks from 'eslint-plugin-react-hooks';
 import eslintPluginReactRefresh from 'eslint-plugin-react-refresh';
 import eslintPluginPrettier from 'eslint-plugin-prettier';
-
+import { join } from 'path';
 export default tseslint.config(
   {
     ignores: ['**/node_modules', '**/dist', '**/out'],
@@ -16,6 +16,19 @@ export default tseslint.config(
     settings: {
       react: {
         version: 'detect',
+      },
+      'import/resolver': {
+        typescript: {
+          project: join(__dirname, './tsconfig.json'),
+        },
+        alias: {
+          map: [
+            ['@shared', join(__dirname, './src/shared')],
+            ['@renderer', join(__dirname, './src/renderer/src')],
+            // Add other aliases if needed
+          ],
+          extensions: ['.js', '.jsx', '.ts', '.tsx', '.d.ts'],
+        },
       },
     },
   },
