@@ -46,7 +46,7 @@ const removeElement = (selector: string): void => {
 
 // Define a generic function type that takes any number of arguments and returns void
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type RendererFunction<T extends any[]> = (...args: T) => void | (() => void);
+type RendererFunction<T extends any[]> = (...args: T) => void | (() => void) | Promise<void>;
 
 class SecondaryBrowser extends BrowserWindow {
   private mainWindow: BrowserWindow;
@@ -88,6 +88,36 @@ class SecondaryBrowser extends BrowserWindow {
   public async waitFor(timeout: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, timeout));
   }
+
+  public async simulateTrustedTabKeyDown(): Promise<void> {
+    this.webContents.sendInputEvent({
+      type: 'keyDown',
+      keyCode: 'Tab',
+    });
+    console.log('Tab key pressed');
+    await this.waitFor(100);
+  }
+
+  public async simulateTextEntry(text: string): Promise<void> {
+    for (const char of text) {
+      this.webContents.sendInputEvent({
+        type: 'keyDown',
+        keyCode: char,
+      });
+      await this.waitFor(50);
+      this.webContents.sendInputEvent({
+        type: 'char',
+        keyCode: char,
+      });
+      await this.waitFor(50);
+
+      this.webContents.sendInputEvent({
+        type: 'keyUp',
+        keyCode: char,
+      });
+      await this.waitFor(50);
+    }
+  }
 }
 
 const launchPearsonBrowser = (
@@ -110,6 +140,7 @@ const launchPearsonBrowser = (
   );
 
   headlessWin.loadURL('https://portal.mypearson.com/portal');
+
   headlessWin.webContents.on('did-finish-load', async () => {
     const currentURLString = headlessWin!.webContents.getURL();
     const currentURL = new URL(currentURLString);
@@ -193,12 +224,22 @@ export const createSecondaryBrowser = (
       mainWindow,
     );
     newWindow.loadURL(url);
-    thirdPartyWindows.push(newWindow); // Store the new window in the array
-    newWindow.on('closed', () => {
-      const index = thirdPartyWindows.indexOf(newWindow);
-      if (index > -1) {
-        thirdPartyWindows.splice(index, 1); // Remove the closed window from the array
-      }
+    newWindow.webContents.on('did-finish-load', async () => {
+      thirdPartyWindows.push(newWindow); // Store the new window in the array
+      newWindow.executeJavaScript(() => console.log('hello from new window'));
+      await newWindow.waitFor(5000);
+      await newWindow.simulateTrustedTabKeyDown();
+      await newWindow.simulateTrustedTabKeyDown();
+      await newWindow.simulateTrustedTabKeyDown();
+      await newWindow.simulateTrustedTabKeyDown();
+      await newWindow.simulateTextEntry('25.72');
+
+      newWindow.on('closed', () => {
+        const index = thirdPartyWindows.indexOf(newWindow);
+        if (index > -1) {
+          thirdPartyWindows.splice(index, 1); // Remove the closed window from the array
+        }
+      });
     });
 
     return { action: 'deny' }; // Prevent the default browser window from opening

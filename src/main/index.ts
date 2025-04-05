@@ -77,6 +77,12 @@ function createWindow(): void {
   });
 }
 
+function simulateTrustedTabKeyDown() {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Tab', modifiers: [] });
+  }
+}
+
 app.whenReady().then(() => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron');
