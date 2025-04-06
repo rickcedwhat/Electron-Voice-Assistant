@@ -4,20 +4,19 @@ import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import icon from '../../resources/icon.png?asset';
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
-import { BrowserID } from '../shared/types'; // Adjust the import path as necessary
 import { SuperBrowsers } from '../main/classes/SuperBrowsers';
 
 let pythonProcess: ChildProcessWithoutNullStreams; // Store the Python process object
 let mainWindow: BrowserWindow | null = null;
 export const thirdPartyWindows: (BrowserWindow | null)[] = []; // Array to store third-party windows
-export const debugMode = true; // Set to true for debug mode
+export const debugMode = false; // Set to true for debug mode
 
 function createWindow(): void {
   // Create the browser window.
   mainWindow = new BrowserWindow({
     width: 1500,
     height: 1000,
-    show: true,
+    show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
@@ -88,9 +87,13 @@ app.whenReady().then(() => {
   // IPC test
   ipcMain.on('ping', () => console.log('pong'));
 
+  // [ ] figure out part 1
   ipcMain.on(
     'create-login-browser',
-    (_event, browserID: BrowserID, username: string, password: string, securityAnswer?: string) => {
+    // (_event, browserID: BrowserID, username: string, password: string, securityAnswer?: string) => {
+    (_event, ...args) => {
+      const [browserID, username, password, securityAnswer] = args;
+      console.log({ browserID, username, password, securityAnswer });
       SuperBrowsers.createLoginBrowser(browserID, username, password, securityAnswer);
     },
   );

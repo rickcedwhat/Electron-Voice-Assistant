@@ -11,8 +11,8 @@ if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('electron', {
       ipcRenderer: {
-        invoke: (channel, data) => ipcRenderer.invoke(channel, data),
-        send: (channel, data) => ipcRenderer.send(channel, data),
+        invoke: (channel, ...args) => ipcRenderer.invoke(channel, ...args),
+        send: (channel, ...args) => ipcRenderer.send(channel, ...args),
         on: (channel, callback) => ipcRenderer.on(channel, callback),
         removeAllListeners: (channel) => ipcRenderer.removeAllListeners(channel),
         once: (channel, callback) => ipcRenderer.once(channel, callback),

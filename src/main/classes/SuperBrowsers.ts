@@ -76,46 +76,9 @@ const launchPearsonBrowser = (loginSteps: LoginStep[]): LaunchLoginBrowser => {
     'https://portal.mypearson.com/portal',
   );
 
-  // loginHeadless.webContents.on('did-finish-load', async () => {
-  //   const currentURLString = loginHeadless!.webContents.getURL();
-  //   const currentURL = new URL(currentURLString);
-  //   const currentBaseURL = `${currentURL.origin}${currentURL.pathname}`;
-  //   const loginBaseURL = 'https://login.pearson.com/v1/piapi/piui/signin';
-
-  //   // Perform login automation only on the initial URL
-  //   if (currentBaseURL === loginBaseURL) {
-  //     console.log('Attempting to log in...');
-  //     try {
-  //       await loginHeadless.waitFor(500);
-  //       await loginHeadless.removeElement('#browserCheckerMessage');
-  //       await loginHeadless.typeIntoInput('#username', username);
-  //       await loginHeadless.typeIntoInput('#password', password);
-  //       await loginHeadless.clickButton('#mainButton');
-
-  //       // Wait for a specific condition indicating successful login
-  //       // This could be a navigation event, the appearance of an element, or a specific cookie
-  //       await new Promise((resolve) => setTimeout(resolve, 1500)); // Adjust timeout as needed
-  //       console.log('Login attempt completed.');
-  //       loginHeadless.sendMessageToRenderer(
-  //         'browser-window-creation',
-  //         BrowserID.PEARSON,
-  //         ProcessStatus.COMPLETE,
-  //       );
-  //       loginHeadless.show();
-  //       // loginDummy.close();
-  //     } catch {
-  //       console.error('Login attempt failed.');
-  //       loginHeadless.sendMessageToRenderer(
-  //         'browser-window-creation',
-  //         BrowserID.PEARSON,
-  //         ProcessStatus.ERROR,
-  //       );
-  //     }
-  //   }
-  // });
-
   loginHeadless.webContents.on('did-finish-load', async () => {
     console.log('Attempting Pearson login (with UI updates)...');
+    // [ ] refactor this as its own function
     try {
       for (const step of loginSteps) {
         if (step.description) {
@@ -158,8 +121,8 @@ const launchPearsonBrowser = (loginSteps: LoginStep[]): LaunchLoginBrowser => {
         BrowserID.PEARSON,
         ProcessStatus.COMPLETE,
       );
-      // loginHeadless.show();
-      // loginUI.close();
+      loginHeadless.show();
+      loginUI.close();
     } catch (error) {
       console.error('Pearson login attempt failed.', error);
       loginHeadless.sendMessageToRenderer(
@@ -227,7 +190,7 @@ export class SuperBrowsers {
       {
         width: 800,
         height: 500,
-        show: true,
+        show: false,
         webPreferences: {
           preload: join(__dirname, '../preload/index.js'),
           nodeIntegration: false,
@@ -245,8 +208,8 @@ export class SuperBrowsers {
     } else {
       loginUI.loadFile(join(__dirname, '../companions/LoginUI/index.html'));
     }
-    loginUI.webContents.on('did-finish-load', async () => {
-      console.log('dummy finished loading');
+    loginUI.on('ready-to-show', () => {
+      loginUI.show();
     });
     loginHeadless.loadURL(loginURL);
     return { loginHeadless, loginUI };
@@ -287,13 +250,18 @@ export class SuperBrowsers {
             action: 'typeIntoInput',
             selector: '#username',
             value: username,
-            description: 'Entering username',
+            description: `Entering username ${
+              username.slice(0, 3) +
+              Array.from({ length: username.length - 3 })
+                .fill('*')
+                .join('')
+            }`,
           },
           {
             action: 'typeIntoInput',
             selector: '#password',
             value: password,
-            description: 'Entering password',
+            description: `Entering password ${password ? '********' : 'null'}`,
           },
           { action: 'clickButton', selector: '#mainButton', description: 'Clicking login button' },
           { action: 'waitFor', delay: 1500, description: 'Waiting after login attempt' },
