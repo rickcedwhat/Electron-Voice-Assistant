@@ -48,12 +48,15 @@ type RendererFunction<T extends any[]> = (...args: T) => void | (() => void) | P
 
 export class SuperBrowser extends BrowserWindow {
   private mainWindow: BrowserWindow;
+  private browserName: string;
   private constructor(
     options: Electron.BrowserWindowConstructorOptions,
     mainWindow: BrowserWindow,
+    name: string,
   ) {
     super(options);
     this.mainWindow = mainWindow;
+    this.browserName = name;
     this.setupCloseListener();
     this.setupNewWindowHandler();
   }
@@ -61,14 +64,15 @@ export class SuperBrowser extends BrowserWindow {
   static create(
     options: Electron.BrowserWindowConstructorOptions,
     mainWindow: BrowserWindow,
+    name: string,
   ): SuperBrowser {
-    return new SuperBrowser(options, mainWindow);
+    return new SuperBrowser(options, mainWindow, name);
   }
 
   private setupCloseListener(): void {
     this.on('closed', () => {
       SuperBrowsers.removeBrowser(this); // Inform the manager
-      console.log('SuperBrowser closed');
+      console.log(`SuperBrowser ${this.browserName} closed.`);
       // Potentially clean up other resources associated with this SuperBrowser
     });
   }
@@ -80,15 +84,18 @@ export class SuperBrowser extends BrowserWindow {
         // carry on as usual
         return { action: 'allow' };
       }
-      SuperBrowsers.createBrowser({
-        frame: true,
-        closable: true,
-        resizable: true,
-        fullscreenable: true,
-        backgroundColor: 'black',
-        width: 1500,
-        height: 1000,
-      });
+      SuperBrowsers.createBrowser(
+        {
+          frame: true,
+          closable: true,
+          resizable: true,
+          fullscreenable: true,
+          backgroundColor: 'black',
+          width: 1500,
+          height: 1000,
+        },
+        url,
+      );
       return { action: 'deny' };
     });
   }

@@ -1,18 +1,22 @@
 import { useEffect, useState } from 'react';
-import { Paper, Stack, Typography } from '@mui/material';
+import { Stack, Typography } from '@mui/material';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 const ipcRenderer = window.electron.ipcRenderer;
 
 export const App = () => {
-  const [messages, setMessages] = useState<string[]>([]);
   const [error, setError] = useState<string | null>();
 
   useEffect(() => {
     console.log('setting up ipc handlers');
     const handleUpdate = (_event, message: string) => {
-      setMessages((prev) => [...prev, message]);
+      toast.info(message); // Use toast.info for informational messages
       console.log(`sending message login-update ${message}\n`);
     };
-    const handleError = (_event, erroMessage: string) => setError(erroMessage);
+    const handleError = (_event, erroMessage: string) => {
+      toast.error(`Error: ${erroMessage}`); // Use toast.error for error messages
+      setError(erroMessage); // You might still want to store the last error in state for other purposes
+    };
 
     ipcRenderer.on('login-update', handleUpdate);
     ipcRenderer.on('login-error', handleError);
@@ -24,25 +28,19 @@ export const App = () => {
     };
   }, []);
 
-  // ipcRenderer.on('request-otp', () => {
-  //   if (otpInputContainer) {
-  //     otpInputContainer.style.display = 'block';
-  //   }
-  // });
   return (
-    <Stack direction="column" spacing={2} sx={{ padding: 2 }}>
-      {messages.map((message, index) => (
-        <Paper key={index} elevation={3} sx={{ padding: 2 }}>
-          <Typography variant="body1">{message}</Typography>
-        </Paper>
-      ))}
+    <div>
+      {/* Render the ToastContainer to display toasts */}
+      <ToastContainer />
+      {/* You might still want to keep the error display in the component */}
       {error && (
-        <Paper elevation={3} sx={{ padding: 2, backgroundColor: '#ffe0b2' }}>
+        <Stack sx={{ padding: 2 }}>
           <Typography variant="body1" color="error">
-            Error: {error}
+            Last Error: {error}
           </Typography>
-        </Paper>
+        </Stack>
       )}
-    </Stack>
+      {/* You can remove the previous messages display */}
+    </div>
   );
 };

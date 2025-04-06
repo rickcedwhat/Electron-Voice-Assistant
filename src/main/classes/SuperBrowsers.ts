@@ -4,133 +4,38 @@ import { SuperBrowser } from './SuperBrowser';
 import { join } from 'path';
 import { is } from '@electron-toolkit/utils';
 import { debugMode } from '..';
+import { LoginBrowserConfig } from '../loginBrowserConfigs';
+import { PearsonConfig } from '../loginBrowserConfigs/pearsonConfig';
+import { LoginStep, handleSteps } from '../steps';
 
-type LoginStep =
-  | WaitForStep
-  | RemoveElementStep
-  | TypeIntoInputStep
-  | ClickButtonStep
-  | SendMessageToRendererStep
-  | ShowStep
-  | CloseUIStep
-  | WaitForElementStep
-  | RequestOTPStep;
-
-interface BaseLoginStep {
-  action: string;
-  description?: string;
-}
-
-interface WaitForStep extends BaseLoginStep {
-  action: 'waitFor';
-  delay: number;
-}
-
-interface RemoveElementStep extends BaseLoginStep {
-  action: 'removeElement';
-  selector: string;
-}
-
-interface TypeIntoInputStep extends BaseLoginStep {
-  action: 'typeIntoInput';
-  selector: string;
-  value: string; // The actual value to type (or a key like 'username'/'password')
-}
-
-interface ClickButtonStep extends BaseLoginStep {
-  action: 'clickButton';
-  selector: string;
-}
-
-interface SendMessageToRendererStep extends BaseLoginStep {
-  action: 'sendMessageToRenderer';
-  channel: string;
-  args: unknown[];
-}
-
-interface ShowStep extends BaseLoginStep {
-  action: 'show';
-}
-
-interface CloseUIStep extends BaseLoginStep {
-  action: 'closeUI';
-}
-
-interface WaitForElementStep extends BaseLoginStep {
-  action: 'waitForElement';
-  selector: string;
-}
-
-interface RequestOTPStep extends BaseLoginStep {
-  action: 'requestOTP';
-  // You might add more properties here if needed, like a message to display
-}
-
-interface LaunchLoginBrowser {
-  loginHeadless: SuperBrowser;
-  loginUI: SuperBrowser;
-}
-
-const launchPearsonBrowser = (loginSteps: LoginStep[]): LaunchLoginBrowser => {
-  const { loginHeadless, loginUI } = SuperBrowsers.createLoginPair(
-    'https://portal.mypearson.com/portal',
-  );
+const launchBrowser = <T extends Record<string, any>>(
+  config: LoginBrowserConfig<T>,
+  argObject: T,
+) => {
+  const { loginHeadless, loginUI } = SuperBrowsers.createLoginPair(config.loginURL);
 
   loginHeadless.webContents.on('did-finish-load', async () => {
-    console.log('Attempting Pearson login (with UI updates)...');
-    // [ ] refactor this as its own function
+    console.log('Attempting login with UI updates...');
     try {
-      for (const step of loginSteps) {
-        if (step.description) {
-          loginUI.webContents.send('login-update', step.description);
-        }
+      const steps: LoginStep[] = Array.isArray(config.steps)
+        ? config.steps
+        : config.steps(argObject);
+      await handleSteps(steps, loginHeadless, loginUI);
 
-        switch (step.action) {
-          case 'waitFor':
-            await loginHeadless.waitFor(step.delay);
-            break;
-          case 'removeElement':
-            await loginHeadless.removeElement(step.selector);
-            break;
-          case 'typeIntoInput':
-            await loginHeadless.typeIntoInput(step.selector, step.value);
-            break;
-          case 'clickButton':
-            await loginHeadless.clickButton(step.selector);
-            break;
-          // case 'requestOTP':
-          //   // Logic to inform loginUI to request OTP and then receive it
-          //   loginUI.webContents.send('request-otp');
-          //   const otp = await new Promise((resolve) => {
-          //     ipcMain.once('otp-submitted', (event, otpValue) => {
-          //       resolve(otpValue);
-          //     });
-          //   });
-          //   console.log('Received OTP:', otp);
-          //   // Now you would have a step to input the OTP into loginHeadless
-          //   // await loginHeadless.typeIntoInput('#otp-field', otp);
-          //   break;
-          default:
-            console.log(`Unknown action: ${step.action}`);
-        }
-      }
-
-      console.log('Pearson login attempt completed.');
       loginHeadless.sendMessageToRenderer(
         'browser-window-creation',
         BrowserID.PEARSON,
         ProcessStatus.COMPLETE,
       );
       loginHeadless.show();
-      loginUI.close();
+      // loginUI.close();
     } catch (error) {
-      console.error('Pearson login attempt failed.', error);
+      console.error('Login attempt failed.', error);
       loginHeadless.sendMessageToRenderer(
         'browser-window-creation',
         BrowserID.PEARSON,
         ProcessStatus.ERROR,
       );
-      loginUI.webContents.send('login-error', (error as Error).message || 'Login failed.');
     }
   });
 
@@ -185,6 +90,7 @@ export class SuperBrowsers {
         },
       },
       SuperBrowsers.mainWindow,
+      `loginHeadless-for-${loginURL}`,
     );
     const loginUI = SuperBrowser.create(
       {
@@ -199,6 +105,7 @@ export class SuperBrowsers {
         },
       },
       SuperBrowsers.mainWindow,
+      `loginUI-for-${loginURL}`,
     );
     if (is.dev) {
       loginUI.loadURL('http://localhost:5173/companions/LoginUI/index.html');
@@ -220,8 +127,11 @@ export class SuperBrowsers {
     browsers.forEach((br) => br.close());
   }
 
-  static createBrowser(options: Electron.BrowserWindowConstructorOptions): SuperBrowser {
-    const newBrowser = SuperBrowser.create(options, SuperBrowsers.mainWindow);
+  static createBrowser(
+    options: Electron.BrowserWindowConstructorOptions,
+    name: string,
+  ): SuperBrowser {
+    const newBrowser = SuperBrowser.create(options, SuperBrowsers.mainWindow, name);
     SuperBrowsers.addBrowser(newBrowser);
     console.log('SuperBrowser created. Total:', SuperBrowsers.browsers.size);
     return newBrowser;
@@ -234,49 +144,17 @@ export class SuperBrowsers {
     password: string,
     securityAnswer?: string,
   ) => {
-    let loginHeadless: SuperBrowser | null = null;
-    let loginUI: SuperBrowser | null = null;
-    console.log(`Launching ${browserID}`);
+    console.log({ securityAnswer });
+    let browserConfig: LoginBrowserConfig<Record<string, any>> | null = null;
     switch (browserID) {
       case BrowserID.PEARSON:
-        const steps: LoginStep[] = [
-          { action: 'waitFor', delay: 500, description: 'Closing popup' },
-          {
-            action: 'removeElement',
-            selector: '#browserCheckerMessage',
-            description: 'Removing browser check message',
-          },
-          {
-            action: 'typeIntoInput',
-            selector: '#username',
-            value: username,
-            description: `Entering username ${
-              username.slice(0, 3) +
-              Array.from({ length: username.length - 3 })
-                .fill('*')
-                .join('')
-            }`,
-          },
-          {
-            action: 'typeIntoInput',
-            selector: '#password',
-            value: password,
-            description: `Entering password ${password ? '********' : 'null'}`,
-          },
-          { action: 'clickButton', selector: '#mainButton', description: 'Clicking login button' },
-          { action: 'waitFor', delay: 1500, description: 'Waiting after login attempt' },
-          // Example of a step that might require user input (OTP)
-          // { action: 'requestOTP', description: 'Waiting for OTP input' },
-        ];
-        const pearsonBrowsers = launchPearsonBrowser(steps);
-        loginHeadless = pearsonBrowsers.loginHeadless;
-        loginUI = pearsonBrowsers.loginUI;
-        console.log({ securityAnswer });
+        browserConfig = PearsonConfig as LoginBrowserConfig<Record<string, any>>;
         break;
       default:
         console.error('Invalid browser ID');
         return;
     }
+    const { loginHeadless, loginUI } = launchBrowser(browserConfig, { username, password });
     SuperBrowsers.addBrowser(loginHeadless);
     if (loginUI) {
       SuperBrowsers.addBrowser(loginUI);
@@ -291,15 +169,18 @@ export class SuperBrowsers {
         // carry on as usual
         return { action: 'allow' };
       }
-      const newWindow = SuperBrowsers.createBrowser({
-        frame: true,
-        closable: true,
-        resizable: true,
-        fullscreenable: true,
-        backgroundColor: 'black',
-        width: 1500,
-        height: 1000,
-      });
+      const newWindow = SuperBrowsers.createBrowser(
+        {
+          frame: true,
+          closable: true,
+          resizable: true,
+          fullscreenable: true,
+          backgroundColor: 'black',
+          width: 1500,
+          height: 1000,
+        },
+        url,
+      );
       newWindow.loadURL(url);
       return { action: 'deny' }; // Prevent the default browser window from opening
     });
