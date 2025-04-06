@@ -22,23 +22,31 @@ const LaunchBrowserButton: React.FC<LaunchBrowserButtonProps> = ({
 }: LaunchBrowserButtonProps) => {
   const [status, setStatus] = useState<ProcessStatus>(ProcessStatus.INACTIVE);
 
-  const handleLaunch = useCallback(() => {
+  const handleLaunch = () => {
     setStatus(ProcessStatus.LOADING);
-    ipcRenderer.send('launch-secondary-browser', browserID, username, password, securityAnswer);
+    ipcRenderer.send('create-login-browser', browserID, username, password, securityAnswer);
+  };
 
-    const removeListener = ipcRenderer.on(
-      'browser-window-creation',
-      (_event, receivedBrowserID, processStatus) => {
-        if (receivedBrowserID === BrowserID.PEARSON) {
-          console.log(`Received process status: ${processStatus}`);
-          setStatus(processStatus);
-          if (processStatus === ProcessStatus.COMPLETE) {
-            removeListener();
-          }
+  useEffect(() => {
+    const browserWindowCreationListener = (
+      _event,
+      receivedBrowserID: string,
+      processStatus: ProcessStatus,
+    ) => {
+      if (receivedBrowserID === BrowserID.PEARSON) {
+        console.log(`Received process status: ${processStatus}`);
+        setStatus(processStatus);
+        if (processStatus === ProcessStatus.COMPLETE) {
+          ipcRenderer.removeAllListeners('browser-window-creation');
         }
-      },
-    ); // Add the listener for browser window creation
-  }, [browserID, username, password, securityAnswer, setStatus]);
+      }
+    };
+
+    ipcRenderer.on('browser-window-creation', browserWindowCreationListener);
+    return () => {
+      ipcRenderer.removeAllListeners('browser-window-creation');
+    };
+  });
 
   useEffect(() => {
     if (status === ProcessStatus.COMPLETE) {

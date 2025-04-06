@@ -4,36 +4,35 @@ import { join } from 'path';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import icon from '../../resources/icon.png?asset';
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
-import { createSecondaryBrowser } from './utils';
 import { BrowserID } from '../shared/types'; // Adjust the import path as necessary
 import { SuperBrowsers } from '../main/classes/SuperBrowsers';
 
 let pythonProcess: ChildProcessWithoutNullStreams; // Store the Python process object
 let mainWindow: BrowserWindow | null = null;
-let secondaryBrowsers: SuperBrowsers | null;
-export const secondaryWindows: (BrowserWindow | null)[] = [];
 export const thirdPartyWindows: (BrowserWindow | null)[] = []; // Array to store third-party windows
-const debugMode = true; // Set to true for debug mode
+export const debugMode = true; // Set to true for debug mode
 
 function createWindow(): void {
   // Create the browser window.
   mainWindow = new BrowserWindow({
     width: 1500,
     height: 1000,
-    show: false,
+    show: true,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false,
-      nodeIntegration: true,
+      nodeIntegration: false,
       contextIsolation: true,
+      sandbox: false,
     },
   });
 
   mainWindow.on('ready-to-show', () => {
-    mainWindow!.show();
-    secondaryBrowsers = new SuperBrowsers(mainWindow!);
+    if (mainWindow) {
+      mainWindow.show();
+      SuperBrowsers.setMainWindow(mainWindow);
+    }
   });
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -45,20 +44,16 @@ function createWindow(): void {
   // Load the remote URL for development or the local html file for production.
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
-    mainWindow.webContents.openDevTools(); // Open DevTools here
+    if (debugMode) {
+      mainWindow.webContents.openDevTools(); // Open DevTools here
+    }
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
   }
 
   mainWindow.on('closed', () => {
     mainWindow = null;
-    secondaryWindows.forEach((window) => {
-      window!.close();
-    });
-    secondaryWindows.length = 0;
-    thirdPartyWindows.forEach((window) => {
-      window!.close();
-    });
+    SuperBrowsers.closeAll();
   });
 
   const pythonScriptPath = join(app.getAppPath(), 'backend', 'websocket_server.py'); // Adjust 'backend' if needed
@@ -94,9 +89,9 @@ app.whenReady().then(() => {
   ipcMain.on('ping', () => console.log('pong'));
 
   ipcMain.on(
-    'launch-secondary-browser',
+    'create-login-browser',
     (_event, browserID: BrowserID, username: string, password: string, securityAnswer?: string) => {
-      createSecondaryBrowser(mainWindow!, browserID, username, password, securityAnswer);
+      SuperBrowsers.createLoginBrowser(browserID, username, password, securityAnswer);
     },
   );
 

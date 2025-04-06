@@ -80,18 +80,15 @@ export class SuperBrowser extends BrowserWindow {
         // carry on as usual
         return { action: 'allow' };
       }
-      SuperBrowsers.createBrowser(
-        {
-          frame: true,
-          closable: true,
-          resizable: true,
-          fullscreenable: true,
-          backgroundColor: 'black',
-          width: 1500,
-          height: 1000,
-        },
-        this.mainWindow,
-      );
+      SuperBrowsers.createBrowser({
+        frame: true,
+        closable: true,
+        resizable: true,
+        fullscreenable: true,
+        backgroundColor: 'black',
+        width: 1500,
+        height: 1000,
+      });
       return { action: 'deny' };
     });
   }
