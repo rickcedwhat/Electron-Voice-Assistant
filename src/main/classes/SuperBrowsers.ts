@@ -82,6 +82,7 @@ export class SuperBrowsers {
         width: 1500,
         height: 1000,
         show: false,
+        backgroundColor: 'black',
         webPreferences: {
           preload: join(__dirname, '../preload/index.js'),
           nodeIntegration: false,
@@ -97,6 +98,7 @@ export class SuperBrowsers {
         width: 800,
         height: 500,
         show: false,
+        backgroundColor: 'black',
         webPreferences: {
           preload: join(__dirname, '../preload/index.js'),
           nodeIntegration: false,

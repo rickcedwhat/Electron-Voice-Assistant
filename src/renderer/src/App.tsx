@@ -22,7 +22,6 @@ const LaunchBrowserButton: React.FC<LaunchBrowserButtonProps> = ({
 }: LaunchBrowserButtonProps) => {
   const [status, setStatus] = useState<ProcessStatus>(ProcessStatus.INACTIVE);
 
-  // [ ] figure out part 2
   const handleLaunch = () => {
     setStatus(ProcessStatus.LOADING);
     ipcRenderer.send('create-login-browser', browserID, username, password, securityAnswer);

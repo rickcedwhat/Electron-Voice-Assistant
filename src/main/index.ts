@@ -87,7 +87,6 @@ app.whenReady().then(() => {
   // IPC test
   ipcMain.on('ping', () => console.log('pong'));
 
-  // [ ] figure out part 1
   ipcMain.on(
     'create-login-browser',
     // (_event, browserID: BrowserID, username: string, password: string, securityAnswer?: string) => {

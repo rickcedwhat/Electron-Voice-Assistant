@@ -1,5 +1,5 @@
 <!-- issues -->
 
-[ ] login headlessly
-[ ] tab to input
-[?] thirdPartyWindow is not closeable
+[x] login headlessly
+[x] tab to input
+[x] thirdPartyWindow is not closeable
