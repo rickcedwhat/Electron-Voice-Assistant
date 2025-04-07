@@ -5,8 +5,9 @@ import { join } from 'path';
 import { is } from '@electron-toolkit/utils';
 import { debugMode } from '..';
 import { LoginBrowserConfig } from '../loginBrowserConfigs';
-import { PearsonConfig } from '../loginBrowserConfigs/pearsonConfig';
+import { pearsonConfig } from '../loginBrowserConfigs/pearsonConfig';
 import { LoginStep, handleSteps } from '../steps';
+import { canvasFIUConfig } from '../loginBrowserConfigs/canvasFIUConfig';
 
 const launchBrowser = <T extends Record<string, any>>(
   config: LoginBrowserConfig<T>,
@@ -24,17 +25,24 @@ const launchBrowser = <T extends Record<string, any>>(
 
       loginHeadless.sendMessageToRenderer(
         'browser-window-creation',
-        BrowserID.PEARSON,
+        config.browserID,
         ProcessStatus.COMPLETE,
       );
       loginHeadless.show();
+      // [ ] turn this back on
       // loginUI.close();
     } catch (error) {
       console.error('Login attempt failed.', error);
+      // [ ] figure out how we're handling errors
       loginHeadless.sendMessageToRenderer(
         'browser-window-creation',
-        BrowserID.PEARSON,
+        config.browserID,
         ProcessStatus.ERROR,
+      );
+      loginHeadless.sendMessageToRenderer(
+        'login-error',
+        loginUI.browserInstance,
+        (error as Error).message,
       );
     }
   });
@@ -45,6 +53,7 @@ const launchBrowser = <T extends Record<string, any>>(
 export class SuperBrowsers {
   private static browsers: Set<SuperBrowser> = new Set();
   private static mainWindow: BrowserWindow;
+
   constructor() {}
 
   static setMainWindow(mainWindow: BrowserWindow) {
@@ -81,7 +90,7 @@ export class SuperBrowsers {
       {
         width: 1500,
         height: 1000,
-        show: false,
+        show: true,
         backgroundColor: 'black',
         webPreferences: {
           preload: join(__dirname, '../preload/index.js'),
@@ -110,12 +119,13 @@ export class SuperBrowsers {
       `loginUI-for-${loginURL}`,
     );
     if (is.dev) {
-      loginUI.loadURL('http://localhost:5173/companions/LoginUI/index.html');
-      if (debugMode) {
-        loginUI.webContents.openDevTools();
-      }
+      loginUI.loadURL(
+        `http://localhost:5173/companions/LoginUI/index.html?instance=${loginUI.browserInstance}`,
+      );
     } else {
-      loginUI.loadFile(join(__dirname, '../companions/LoginUI/index.html'));
+      loginUI.loadFile(join(__dirname, '../companions/LoginUI/index.html'), {
+        query: { instance: loginUI.browserInstance },
+      });
     }
     loginUI.on('ready-to-show', () => {
       loginUI.show();
@@ -150,7 +160,10 @@ export class SuperBrowsers {
     let browserConfig: LoginBrowserConfig<Record<string, any>> | null = null;
     switch (browserID) {
       case BrowserID.PEARSON:
-        browserConfig = PearsonConfig as LoginBrowserConfig<Record<string, any>>;
+        browserConfig = pearsonConfig as LoginBrowserConfig<Record<string, any>>;
+        break;
+      case BrowserID.CANVAS_FIU:
+        browserConfig = canvasFIUConfig as LoginBrowserConfig<Record<string, any>>;
         break;
       default:
         console.error('Invalid browser ID');

@@ -1,12 +1,9 @@
-import { LoginStep } from '../steps';
+import { LoginBrowserConfig } from '../loginBrowserConfigs';
+import { BrowserID } from '../../shared/types';
 
-type LoginBrowserConfig<T extends Record<string, any> = Record<string, any>> = {
-  loginURL: string;
-  steps: LoginStep[] | ((argObject: T) => LoginStep[]);
-};
-
-export const PearsonConfig: LoginBrowserConfig<{ username: string; password: string }> = {
+export const canvasFIUConfig: LoginBrowserConfig<{ username: string; password: string }> = {
   loginURL: 'https://login.fiu.edu/',
+  browserID: BrowserID.CANVAS_FIU,
   steps: ({ username, password }) => {
     return [
       {
@@ -21,7 +18,7 @@ export const PearsonConfig: LoginBrowserConfig<{ username: string; password: str
         value: password,
         description: `Entering password${password ? '...' : ': missing'}`,
       },
-      { action: 'clickButton', selector: '#mainButton', description: 'Clicking login button' },
+      { action: 'clickButton', selector: '[@name="submit"]', description: 'Clicking login button' },
       { action: 'waitFor', delay: 1500, description: 'Waiting after login attempt' },
       // Example of a step that might require user input (OTP)
       // { action: 'requestOTP', description: 'Waiting for OTP input' },

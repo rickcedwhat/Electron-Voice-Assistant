@@ -1,5 +1,6 @@
 import { BrowserWindow } from 'electron';
 import { SuperBrowsers } from './SuperBrowsers';
+import { v4 as uuidv4 } from 'uuid';
 
 interface InputEventOptions {
   bubbles: boolean;
@@ -49,6 +50,8 @@ type RendererFunction<T extends any[]> = (...args: T) => void | (() => void) | P
 export class SuperBrowser extends BrowserWindow {
   private mainWindow: BrowserWindow;
   private browserName: string;
+  public browserInstance: string;
+
   private constructor(
     options: Electron.BrowserWindowConstructorOptions,
     mainWindow: BrowserWindow,
@@ -59,6 +62,7 @@ export class SuperBrowser extends BrowserWindow {
     this.browserName = name;
     this.setupCloseListener();
     this.setupNewWindowHandler();
+    this.browserInstance = uuidv4();
   }
 
   static create(

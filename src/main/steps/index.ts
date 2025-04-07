@@ -1,3 +1,4 @@
+import { BrowserID } from '../../shared/types';
 import { SuperBrowser } from '../classes/SuperBrowser';
 
 export type LoginStep =
@@ -68,7 +69,7 @@ export const handleSteps = async (
 ): Promise<void> => {
   for (const step of loginSteps) {
     if (step.description) {
-      loginUI.webContents.send('login-update', step.description);
+      loginUI.webContents.send('login-update', loginUI.browserInstance, step.description);
     }
 
     switch (step.action) {

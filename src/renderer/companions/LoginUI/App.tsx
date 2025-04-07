@@ -6,16 +6,27 @@ const ipcRenderer = window.electron.ipcRenderer;
 
 export const App = () => {
   const [error, setError] = useState<string | null>();
+  const [browserInstance, setBrowserInstance] = useState<string | null>();
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    setBrowserInstance(searchParams.get('instance'));
+  }, []);
 
   useEffect(() => {
     console.log('setting up ipc handlers');
-    const handleUpdate = (_event, message: string) => {
+    const handleUpdate = (_event, instance: string, message: string) => {
+      if (browserInstance !== instance) return;
       toast.info(message); // Use toast.info for informational messages
-      console.log(`sending message login-update ${message}\n`);
+      console.log(`received message login-update ${message}\n`);
     };
-    const handleError = (_event, erroMessage: string) => {
-      toast.error(`Error: ${erroMessage}`); // Use toast.error for error messages
-      setError(erroMessage); // You might still want to store the last error in state for other purposes
+    // [ ] somehow not listening
+    const handleError = (_event, instance: string, errorMessage: string) => {
+      console.log('handling error', { browserInstance, instance, errorMessage });
+      if (browserInstance !== instance) return;
+      toast.error(`Error: ${errorMessage}`); // Use toast.error for error messages
+      setError(errorMessage); // You might still want to store the last error in state for other purposes
+      console.log(`received message login-error ${errorMessage}\n`);
     };
 
     ipcRenderer.on('login-update', handleUpdate);
@@ -26,10 +37,11 @@ export const App = () => {
       ipcRenderer.removeAllListeners('login-update');
       ipcRenderer.removeAllListeners('login-error');
     };
-  }, []);
+  }, [browserInstance]);
 
   return (
     <div>
+      Browser Instance: {browserInstance}
       {/* Render the ToastContainer to display toasts */}
       <ToastContainer />
       {/* You might still want to keep the error display in the component */}

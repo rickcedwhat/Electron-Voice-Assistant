@@ -1,7 +1,7 @@
 import { Box, Button, CircularProgress, Container, Typography } from '@mui/material';
 import { VoiceAssistant } from './components/VoiceAssistantNEW'; // Updated import
 import Versions from './components/Versions';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BrowserID, ProcessStatus } from '@shared/types'; // Adjust the import path as necessary
 import { CheckCircleOutline as CheckCircleOutlineIcon } from '@mui/icons-material';
 
@@ -28,13 +28,15 @@ const LaunchBrowserButton: React.FC<LaunchBrowserButtonProps> = ({
     console.log('sending:', { browserID, username, password, securityAnswer });
   };
 
+  // [ ] i dont think this is listening at all
   useEffect(() => {
     const browserWindowCreationListener = (
       _event,
-      receivedBrowserID: string,
+      receivedBrowserID: BrowserID,
       processStatus: ProcessStatus,
     ) => {
-      if (receivedBrowserID === BrowserID.PEARSON) {
+      console.log({ receivedBrowserID, processStatus, browserID });
+      if (receivedBrowserID === browserID) {
         console.log(`Received process status: ${processStatus}`);
         setStatus(processStatus);
         if (processStatus === ProcessStatus.COMPLETE) {
@@ -75,23 +77,6 @@ const LaunchBrowserButton: React.FC<LaunchBrowserButtonProps> = ({
         {status}
       </Typography>
       <br />
-      {/* loop through all ProcessStatus enums */}
-      {[
-        ProcessStatus.INACTIVE,
-        ProcessStatus.LOADING,
-        ProcessStatus.COMPLETE,
-        ProcessStatus.ERROR,
-      ].map((statusValue) => (
-        <Button
-          variant="contained"
-          color={statusValue === ProcessStatus.ERROR ? 'error' : 'primary'}
-          key={statusValue}
-          onClick={() => setStatus(statusValue)}
-          disabled={statusValue === status}
-        >
-          {statusValue}
-        </Button>
-      ))}
     </>
   );
 };
@@ -115,6 +100,11 @@ function App(): JSX.Element {
         browserID={BrowserID.PEARSON}
         username="andresbruck"
         password="Bruckstein2006"
+      />
+      <LaunchBrowserButton
+        browserID={BrowserID.CANVAS_FIU}
+        username="sinno009"
+        password="Northmiamibaby305!"
       />
       <Versions />
     </Container>

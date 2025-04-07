@@ -1,12 +1,9 @@
-import { LoginStep } from '../steps';
+import { LoginBrowserConfig } from '../loginBrowserConfigs';
+import { BrowserID } from '../../shared/types';
 
-type LoginBrowserConfig<T extends Record<string, any> = Record<string, any>> = {
-  loginURL: string;
-  steps: LoginStep[] | ((argObject: T) => LoginStep[]);
-};
-
-export const PearsonConfig: LoginBrowserConfig<{ username: string; password: string }> = {
+export const pearsonConfig: LoginBrowserConfig<{ username: string; password: string }> = {
   loginURL: 'https://portal.mypearson.com/portal',
+  browserID: BrowserID.PEARSON,
   steps: ({ username, password }) => {
     return [
       { action: 'waitFor', delay: 500, description: 'Closing popup' },

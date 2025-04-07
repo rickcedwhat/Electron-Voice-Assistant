@@ -1,6 +1,7 @@
 export enum BrowserID {
   PEARSON = 'pearson',
   CYBERTEXT = 'cybertext',
+  CANVAS_FIU = 'canvasFIU',
 }
 
 export enum ProcessStatus {
