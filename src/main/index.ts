@@ -5,11 +5,31 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import icon from '../../resources/icon.png?asset';
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import { SuperBrowsers } from '../main/classes/SuperBrowsers';
+import { start } from 'repl';
 
 let pythonProcess: ChildProcessWithoutNullStreams; // Store the Python process object
 let mainWindow: BrowserWindow | null = null;
 export const thirdPartyWindows: (BrowserWindow | null)[] = []; // Array to store third-party windows
 export const debugMode = false; // Set to true for debug mode
+
+const startPythonServer = () => {
+  const pythonScriptPath = join(app.getAppPath(), 'backend', 'websocket_server.py'); // Adjust 'backend' if needed
+  console.log('Python script path:', pythonScriptPath);
+  pythonProcess = spawn('python', [pythonScriptPath]);
+
+  // Handle server output (optional, but good for debugging)
+  pythonProcess.stdout.on('data', (data: Buffer) => {
+    console.log(`Python server stdout: ${data}`);
+  });
+
+  pythonProcess.stderr.on('data', (data: Buffer) => {
+    console.error(`Python server stderr: ${data}`);
+  });
+
+  pythonProcess.on('close', (code: number | null) => {
+    console.log(`Python server process exited with code ${code}`);
+  });
+};
 
 function createWindow(): void {
   // Create the browser window.
@@ -55,22 +75,7 @@ function createWindow(): void {
     SuperBrowsers.closeAll();
   });
 
-  const pythonScriptPath = join(app.getAppPath(), 'backend', 'websocket_server.py'); // Adjust 'backend' if needed
-  console.log('Python script path:', pythonScriptPath);
-  pythonProcess = spawn('python', [pythonScriptPath]);
-
-  // Handle server output (optional, but good for debugging)
-  pythonProcess.stdout.on('data', (data: Buffer) => {
-    console.log(`Python server stdout: ${data}`);
-  });
-
-  pythonProcess.stderr.on('data', (data: Buffer) => {
-    console.error(`Python server stderr: ${data}`);
-  });
-
-  pythonProcess.on('close', (code: number | null) => {
-    console.log(`Python server process exited with code ${code}`);
-  });
+  // startPythonServer();
 }
 
 app.whenReady().then(() => {

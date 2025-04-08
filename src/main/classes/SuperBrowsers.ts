@@ -1,12 +1,12 @@
 import { BrowserWindow } from 'electron';
-import { BrowserID, ProcessStatus } from '../../shared/types';
+import { BrowserID } from '../../shared/types';
 import { SuperBrowser } from './SuperBrowser';
 import { join } from 'path';
 import { is } from '@electron-toolkit/utils';
 import { debugMode } from '..';
 import { LoginBrowserConfig } from '../loginBrowserConfigs';
 import { pearsonConfig } from '../loginBrowserConfigs/pearsonConfig';
-import { LoginStep, handleSteps } from '../steps';
+import { handleSteps } from '../steps';
 import { canvasFIUConfig } from '../loginBrowserConfigs/canvasFIUConfig';
 
 const launchBrowser = <T extends Record<string, any>>(
@@ -14,37 +14,10 @@ const launchBrowser = <T extends Record<string, any>>(
   argObject: T,
 ) => {
   const { loginHeadless, loginUI } = SuperBrowsers.createLoginPair(config.loginURL);
+  const mainWindow = SuperBrowsers.getMainWindow();
 
   loginHeadless.webContents.on('did-finish-load', async () => {
-    console.log('Attempting login with UI updates...');
-    try {
-      const steps: LoginStep[] = Array.isArray(config.steps)
-        ? config.steps
-        : config.steps(argObject);
-      await handleSteps(steps, loginHeadless, loginUI);
-
-      loginHeadless.sendMessageToRenderer(
-        'browser-window-creation',
-        config.browserID,
-        ProcessStatus.COMPLETE,
-      );
-      loginHeadless.show();
-      // [ ] turn this back on
-      // loginUI.close();
-    } catch (error) {
-      console.error('Login attempt failed.', error);
-      // [ ] figure out how we're handling errors
-      loginHeadless.sendMessageToRenderer(
-        'browser-window-creation',
-        config.browserID,
-        ProcessStatus.ERROR,
-      );
-      loginHeadless.sendMessageToRenderer(
-        'login-error',
-        loginUI.browserInstance,
-        (error as Error).message,
-      );
-    }
+    await handleSteps(config, argObject, loginHeadless, loginUI, mainWindow);
   });
 
   return { loginHeadless, loginUI };
@@ -55,6 +28,10 @@ export class SuperBrowsers {
   private static mainWindow: BrowserWindow;
 
   constructor() {}
+
+  static getMainWindow() {
+    return SuperBrowsers.mainWindow;
+  }
 
   static setMainWindow(mainWindow: BrowserWindow) {
     SuperBrowsers.mainWindow = mainWindow;
@@ -99,7 +76,6 @@ export class SuperBrowsers {
           sandbox: false,
         },
       },
-      SuperBrowsers.mainWindow,
       `loginHeadless-for-${loginURL}`,
     );
     const loginUI = SuperBrowser.create(
@@ -115,17 +91,12 @@ export class SuperBrowsers {
           sandbox: false,
         },
       },
-      SuperBrowsers.mainWindow,
       `loginUI-for-${loginURL}`,
     );
     if (is.dev) {
-      loginUI.loadURL(
-        `http://localhost:5173/companions/LoginUI/index.html?instance=${loginUI.browserInstance}`,
-      );
+      loginUI.loadURL(`http://localhost:5173/companions/LoginUI/index.html`);
     } else {
-      loginUI.loadFile(join(__dirname, '../companions/LoginUI/index.html'), {
-        query: { instance: loginUI.browserInstance },
-      });
+      loginUI.loadFile(join(__dirname, '../companions/LoginUI/index.html'));
     }
     loginUI.on('ready-to-show', () => {
       loginUI.show();
@@ -143,7 +114,7 @@ export class SuperBrowsers {
     options: Electron.BrowserWindowConstructorOptions,
     name: string,
   ): SuperBrowser {
-    const newBrowser = SuperBrowser.create(options, SuperBrowsers.mainWindow, name);
+    const newBrowser = SuperBrowser.create(options, name);
     SuperBrowsers.addBrowser(newBrowser);
     console.log('SuperBrowser created. Total:', SuperBrowsers.browsers.size);
     return newBrowser;

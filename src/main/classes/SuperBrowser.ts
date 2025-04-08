@@ -1,6 +1,5 @@
 import { BrowserWindow } from 'electron';
 import { SuperBrowsers } from './SuperBrowsers';
-import { v4 as uuidv4 } from 'uuid';
 
 interface InputEventOptions {
   bubbles: boolean;
@@ -48,29 +47,17 @@ const removeElement = (selector: string): void => {
 type RendererFunction<T extends any[]> = (...args: T) => void | (() => void) | Promise<void>;
 
 export class SuperBrowser extends BrowserWindow {
-  private mainWindow: BrowserWindow;
   private browserName: string;
-  public browserInstance: string;
 
-  private constructor(
-    options: Electron.BrowserWindowConstructorOptions,
-    mainWindow: BrowserWindow,
-    name: string,
-  ) {
+  private constructor(options: Electron.BrowserWindowConstructorOptions, name: string) {
     super(options);
-    this.mainWindow = mainWindow;
     this.browserName = name;
     this.setupCloseListener();
     this.setupNewWindowHandler();
-    this.browserInstance = uuidv4();
   }
 
-  static create(
-    options: Electron.BrowserWindowConstructorOptions,
-    mainWindow: BrowserWindow,
-    name: string,
-  ): SuperBrowser {
-    return new SuperBrowser(options, mainWindow, name);
+  static create(options: Electron.BrowserWindowConstructorOptions, name: string): SuperBrowser {
+    return new SuperBrowser(options, name);
   }
 
   private setupCloseListener(): void {
@@ -102,10 +89,6 @@ export class SuperBrowser extends BrowserWindow {
       );
       return { action: 'deny' };
     });
-  }
-
-  public sendMessageToRenderer(channel: string, ...args: unknown[]): void {
-    this.mainWindow.webContents.send(channel, ...args);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

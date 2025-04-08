@@ -28,7 +28,6 @@ const LaunchBrowserButton: React.FC<LaunchBrowserButtonProps> = ({
     console.log('sending:', { browserID, username, password, securityAnswer });
   };
 
-  // [ ] i dont think this is listening at all
   useEffect(() => {
     const browserWindowCreationListener = (
       _event,
@@ -45,7 +44,9 @@ const LaunchBrowserButton: React.FC<LaunchBrowserButtonProps> = ({
       }
     };
 
+    console.log({ ipcRenderer });
     ipcRenderer.on('browser-window-creation', browserWindowCreationListener);
+
     return () => {
       ipcRenderer.removeAllListeners('browser-window-creation');
     };
@@ -82,8 +83,6 @@ const LaunchBrowserButton: React.FC<LaunchBrowserButtonProps> = ({
 };
 
 function App(): JSX.Element {
-  const ipcHandle = (): void => window.electron.ipcRenderer.send('ping');
-
   return (
     <Container maxWidth="md">
       {' '}
@@ -91,15 +90,12 @@ function App(): JSX.Element {
       <Box sx={{ my: 4 }}>
         {' '}
         {/* Add vertical margin */}
-        <VoiceAssistant />
+        {/* <VoiceAssistant /> */}
       </Box>
-      <a target="_blank" rel="noreferrer" onClick={ipcHandle}>
-        Send IPC
-      </a>
       <LaunchBrowserButton
         browserID={BrowserID.PEARSON}
-        username="andresbruck"
-        password="Bruckstein2006"
+        username="paulina.araujo02@gmail.com"
+        password="2Rubiesrubies"
       />
       <LaunchBrowserButton
         browserID={BrowserID.CANVAS_FIU}
