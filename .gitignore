@@ -6,5 +6,5 @@ out
 *.log*
 venv/
 
-supabase/migrations/*.sql
 supabase/seed.sql
+.env

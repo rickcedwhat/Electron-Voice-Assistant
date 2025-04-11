@@ -70,7 +70,7 @@ export class SuperBrowsers {
         show: true,
         backgroundColor: 'black',
         webPreferences: {
-          preload: join(__dirname, '../preload/index.js'),
+          preload: join(__dirname, '../preload/index.mjs'),
           nodeIntegration: false,
           contextIsolation: true,
           sandbox: false,
@@ -85,7 +85,7 @@ export class SuperBrowsers {
         show: false,
         backgroundColor: 'black',
         webPreferences: {
-          preload: join(__dirname, '../preload/index.js'),
+          preload: join(__dirname, '../preload/index.mjs'),
           nodeIntegration: false,
           contextIsolation: true,
           sandbox: false,

@@ -131,3 +131,10 @@ export async function audioFileToArray(
   }
   return { audio: out, sampleRate: _audioBuffer.sampleRate };
 }
+
+export const getEnv = (variableName: string): string => {
+  if (variableName === 'MODE') {
+    return import.meta.env.MODE || (process.env.NODE_ENV as string);
+  }
+  return import.meta.env[variableName] || process.env[variableName];
+};
