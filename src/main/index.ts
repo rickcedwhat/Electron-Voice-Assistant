@@ -9,7 +9,7 @@ import { SuperBrowsers } from '../main/classes/SuperBrowsers';
 let pythonProcess: ChildProcessWithoutNullStreams; // Store the Python process object
 let mainWindow: BrowserWindow | null = null;
 export const thirdPartyWindows: (BrowserWindow | null)[] = []; // Array to store third-party windows
-export const debugMode = true; // Set to true for debug mode
+export const debugMode = is.dev ? true : false; // is.dev ? current option : false;
 
 const startPythonServer = () => {
   const pythonScriptPath = join(app.getAppPath(), 'backend', 'websocket_server.py'); // Adjust 'backend' if needed

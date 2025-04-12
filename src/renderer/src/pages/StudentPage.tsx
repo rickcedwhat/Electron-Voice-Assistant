@@ -5,12 +5,12 @@ import { LaunchBrowserButton } from '@renderer/components/LaunchBrowserButton';
 import { Route as studentRoute } from '../routes/students_.$studentID';
 
 export const StudentPage = () => {
-  const thirdPartyCredentialWithBrowser = studentRoute.useLoaderData();
-  console.log({ thirdPartyCredentialWithBrowser });
+  const { studentWithUser, thirdPartyCredentialWithBrowser } = studentRoute.useLoaderData();
+  console.log({ studentWithUser, thirdPartyCredentialWithBrowser });
 
   return (
-    <Stack direction="row">
-      hi
+    <Stack direction="column" spacing={2}>
+      {studentWithUser.user.name}
       {thirdPartyCredentialWithBrowser.map(({ browser, ...credential }) => {
         const { enc_password, enc_username, id } = credential;
         if (!enc_password || !enc_username) return null;

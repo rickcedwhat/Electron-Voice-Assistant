@@ -7,3 +7,4 @@ export type User = Tables<'user'>;
 
 export type StudentWithUser = Student & { user: User };
 export type ThirdPartyCredentialWithBrowser = ThirdPartyCredential & { browser: Browser };
+export type BrowserID = Browser['id'];

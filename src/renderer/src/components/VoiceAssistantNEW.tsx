@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Typography, Container, Box, Alert } from '@mui/material';
 import { useMicVAD } from '@ricky0123/vad-react';
-import { encodeWAV } from '../utils';
+import { encodeWAV } from '../../../shared/utils';
 
 export const VoiceAssistant: React.FC = () => {
   const [transcript, setTranscript] = useState<string>('');

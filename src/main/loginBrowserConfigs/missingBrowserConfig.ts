@@ -1,8 +1,10 @@
 import { LoginBrowserConfig } from '../loginBrowserConfigs';
+// import { BrowserID } from '../../shared/types';
+// import { BrowserID } from '../../shared/services/';
 
 export const canvasFIUConfig: LoginBrowserConfig<{ username: string; password: string }> = {
-  loginURL: 'https://login.fiu.edu/',
-  browserID: 'canvasFloridaInternationalUniversity',
+  loginURL: '',
+  browserID: BrowserID.CANVAS_FIU,
   steps: ({ username, password }) => {
     return [
       {

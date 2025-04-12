@@ -1,9 +1,8 @@
 import { LoginBrowserConfig } from '../loginBrowserConfigs';
-import { BrowserID } from '../../shared/types';
 
 export const pearsonConfig: LoginBrowserConfig<{ username: string; password: string }> = {
   loginURL: 'https://portal.mypearson.com/portal',
-  browserID: BrowserID.PEARSON,
+  browserID: 'pearson',
   steps: ({ username, password }) => {
     return [
       { action: 'waitFor', delay: 500, description: 'Closing popup' },

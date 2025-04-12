@@ -1,9 +1,40 @@
 import { StudentPage } from '@renderer/pages/StudentPage';
-import { supaClient } from '@renderer/services/supabase/supaClient';
-import { Student, ThirdPartyCredentialWithBrowser } from '@renderer/services/supabase/types';
+import { supaClient } from '@shared/services/supabase/supaClient';
+import {
+  Student,
+  StudentWithUser,
+  ThirdPartyCredentialWithBrowser,
+} from '@shared/services/supabase/types';
 import { createFileRoute } from '@tanstack/react-router';
 
-const getQueryOptions = (studentID: Student['id']) => {
+const getStudentWithUser = (studentID: Student['id']) => {
+  return {
+    queryKey: ['student', { studentID }],
+    queryFn: async () => {
+      console.log('loading student information');
+      const { data, error } = await supaClient
+        .from('student')
+        .select(
+          `
+            *,
+            user (
+              *
+            )
+          `,
+        )
+        .eq('id', studentID)
+        .single(); // Assuming you only want one student
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return data as StudentWithUser;
+    },
+  };
+};
+
+const getThirdPartyCredentialWithBrowser = (studentID: Student['id']) => {
   return {
     queryKey: ['thirdPartyCredential', { studentID }],
     queryFn: async () => {
@@ -31,7 +62,25 @@ const getQueryOptions = (studentID: Student['id']) => {
 
 export const Route = createFileRoute('/students_/$studentID')({
   loader: async ({ context: { queryClient }, params: { studentID } }) => {
-    return queryClient.ensureQueryData(getQueryOptions(studentID));
+    // return queryClient.ensureQueryData(getQueryOptions(studentID));
+    // Use queryClient.ensureQueryData to fetch or get cached student information
+    const studentWithUserPromise = queryClient.ensureQueryData(getStudentWithUser(studentID));
+
+    // Use queryClient.ensureQueryData to fetch or get cached third-party credentials
+    const thirdPartyCredentialWithBrowserPromise = queryClient.ensureQueryData(
+      getThirdPartyCredentialWithBrowser(studentID),
+    );
+
+    // Wait for both queries to resolve
+    const [studentWithUser, thirdPartyCredentialWithBrowser] = await Promise.all([
+      studentWithUserPromise,
+      thirdPartyCredentialWithBrowserPromise,
+    ]);
+
+    return {
+      studentWithUser,
+      thirdPartyCredentialWithBrowser,
+    };
   },
   component: StudentPage,
 });

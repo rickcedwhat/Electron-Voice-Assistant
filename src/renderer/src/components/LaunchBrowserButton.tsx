@@ -1,8 +1,8 @@
 import { Button, CircularProgress, Typography } from '@mui/material';
-import { BrowserID, ProcessStatus } from '@shared/types';
+import { ProcessStatus } from '@shared/types';
 import { useState, useEffect } from 'react';
 import { CheckCircleOutline as CheckCircleOutlineIcon } from '@mui/icons-material';
-import { Browser } from '@renderer/services/supabase/types';
+import { Browser, BrowserID } from '@shared/services/supabase/types';
 
 const ipcRenderer = window.electron.ipcRenderer;
 

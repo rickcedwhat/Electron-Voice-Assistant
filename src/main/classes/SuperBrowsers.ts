@@ -1,5 +1,5 @@
-import { BrowserWindow } from 'electron';
-import { BrowserID } from '../../shared/types';
+import { BrowserWindow, ipcMain } from 'electron';
+import { BrowserID } from '../../shared/services/supabase/types';
 import { SuperBrowser } from './SuperBrowser';
 import { join } from 'path';
 import { is } from '@electron-toolkit/utils';
@@ -8,6 +8,9 @@ import { LoginBrowserConfig } from '../loginBrowserConfigs';
 import { pearsonConfig } from '../loginBrowserConfigs/pearsonConfig';
 import { handleSteps } from '../steps';
 import { canvasFIUConfig } from '../loginBrowserConfigs/canvasFIUConfig';
+import { ProcessStatus } from '../../shared/types';
+
+const browserConfigs = [pearsonConfig, canvasFIUConfig];
 
 const launchBrowser = <T extends Record<string, any>>(
   config: LoginBrowserConfig<T>,
@@ -67,7 +70,7 @@ export class SuperBrowsers {
       {
         width: 1500,
         height: 1000,
-        show: true,
+        show: debugMode,
         backgroundColor: 'black',
         webPreferences: {
           preload: join(__dirname, '../preload/index.mjs'),
@@ -82,7 +85,7 @@ export class SuperBrowsers {
       {
         width: 800,
         height: 500,
-        show: false,
+        show: debugMode,
         backgroundColor: 'black',
         webPreferences: {
           preload: join(__dirname, '../preload/index.mjs'),
@@ -128,17 +131,18 @@ export class SuperBrowsers {
     securityAnswer?: string,
   ) => {
     console.log({ securityAnswer });
-    let browserConfig: LoginBrowserConfig<Record<string, any>> | null = null;
-    switch (browserID) {
-      case BrowserID.PEARSON:
-        browserConfig = pearsonConfig as LoginBrowserConfig<Record<string, any>>;
-        break;
-      case BrowserID.CANVAS_FIU:
-        browserConfig = canvasFIUConfig as LoginBrowserConfig<Record<string, any>>;
-        break;
-      default:
-        console.error('Invalid browser ID');
-        return;
+    const browserConfig = browserConfigs.find((config) => config.browserID === browserID);
+    if (!browserConfig) {
+      // loginUI.webContents.send(
+      //   'login-update',
+      //   `Browser Config does not exist for browserID: ${browserID}`,
+      // );
+      SuperBrowsers.mainWindow.webContents.send(
+        'browser-window-creation',
+        browserID,
+        ProcessStatus.ERROR,
+      );
+      return;
     }
     const { loginHeadless, loginUI } = launchBrowser(browserConfig, { username, password });
     SuperBrowsers.addBrowser(loginHeadless);
