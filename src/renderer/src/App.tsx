@@ -1,7 +1,6 @@
 import { Box, Container } from '@mui/material';
 // import { VoiceAssistant } from './components/VoiceAssistantNEW'; // Updated import
 import Versions from './components/Versions';
-import { StudentsView } from './views/StudentsView';
 
 function App(): JSX.Element {
   return (
@@ -12,8 +11,8 @@ function App(): JSX.Element {
         {' '}
         {/* Add vertical margin */}
         {/* <VoiceAssistant /> */}
+        Welcome to the App!
       </Box>
-      <StudentsView />
       <Versions />
     </Container>
   );

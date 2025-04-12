@@ -5,12 +5,11 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import icon from '../../resources/icon.png?asset';
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import { SuperBrowsers } from '../main/classes/SuperBrowsers';
-import { start } from 'repl';
 
 let pythonProcess: ChildProcessWithoutNullStreams; // Store the Python process object
 let mainWindow: BrowserWindow | null = null;
 export const thirdPartyWindows: (BrowserWindow | null)[] = []; // Array to store third-party windows
-export const debugMode = false; // Set to true for debug mode
+export const debugMode = true; // Set to true for debug mode
 
 const startPythonServer = () => {
   const pythonScriptPath = join(app.getAppPath(), 'backend', 'websocket_server.py'); // Adjust 'backend' if needed

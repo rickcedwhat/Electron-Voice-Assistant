@@ -36,19 +36,19 @@ export type Database = {
     Tables: {
       browser: {
         Row: {
-          browser_name: string | null
-          id: string
-          login_url: string | null
+          id: Database["public"]["Enums"]["browser_id"]
+          name: string
+          url: string
         }
         Insert: {
-          browser_name?: string | null
-          id: string
-          login_url?: string | null
+          id: Database["public"]["Enums"]["browser_id"]
+          name: string
+          url: string
         }
         Update: {
-          browser_name?: string | null
-          id?: string
-          login_url?: string | null
+          id?: Database["public"]["Enums"]["browser_id"]
+          name?: string
+          url?: string
         }
         Relationships: []
       }
@@ -56,23 +56,20 @@ export type Database = {
         Row: {
           id: string
           invoice_ninja_client_id: string | null
-          user_id: string | null
         }
         Insert: {
           id: string
           invoice_ninja_client_id?: string | null
-          user_id?: string | null
         }
         Update: {
           id?: string
           invoice_ninja_client_id?: string | null
-          user_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "student_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
+            foreignKeyName: "student_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
             referencedRelation: "user"
             referencedColumns: ["id"]
           },
@@ -80,28 +77,28 @@ export type Database = {
       }
       third_party_credential: {
         Row: {
-          browser_id: string | null
+          browser_id: Database["public"]["Enums"]["browser_id"] | null
           enc_password: string | null
           enc_username: string | null
           id: string
           notes: string | null
-          student_id: string | null
+          student_id: string
         }
         Insert: {
-          browser_id?: string | null
-          enc_password?: string | null
-          enc_username?: string | null
-          id: string
-          notes?: string | null
-          student_id?: string | null
-        }
-        Update: {
-          browser_id?: string | null
+          browser_id?: Database["public"]["Enums"]["browser_id"] | null
           enc_password?: string | null
           enc_username?: string | null
           id?: string
           notes?: string | null
-          student_id?: string | null
+          student_id: string
+        }
+        Update: {
+          browser_id?: Database["public"]["Enums"]["browser_id"] | null
+          enc_password?: string | null
+          enc_username?: string | null
+          id?: string
+          notes?: string | null
+          student_id?: string
         }
         Relationships: [
           {
@@ -122,18 +119,21 @@ export type Database = {
       }
       user: {
         Row: {
+          auth_id: string | null
           email: string | null
           id: string
           name: string | null
           phone_number: string | null
         }
         Insert: {
+          auth_id?: string | null
           email?: string | null
-          id: string
+          id?: string
           name?: string | null
           phone_number?: string | null
         }
         Update: {
+          auth_id?: string | null
           email?: string | null
           id?: string
           name?: string | null
@@ -149,7 +149,11 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      browser_id:
+        | "pearson"
+        | "canvasFloridaInternationalUniversity"
+        | "cybertext"
+        | "canvasMiamiDadeCollege"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -267,6 +271,13 @@ export const Constants = {
     Enums: {},
   },
   public: {
-    Enums: {},
+    Enums: {
+      browser_id: [
+        "pearson",
+        "canvasFloridaInternationalUniversity",
+        "cybertext",
+        "canvasMiamiDadeCollege",
+      ],
+    },
   },
 } as const

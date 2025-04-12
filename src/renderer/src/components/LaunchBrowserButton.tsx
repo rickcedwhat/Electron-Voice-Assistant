@@ -2,18 +2,19 @@ import { Button, CircularProgress, Typography } from '@mui/material';
 import { BrowserID, ProcessStatus } from '@shared/types';
 import { useState, useEffect } from 'react';
 import { CheckCircleOutline as CheckCircleOutlineIcon } from '@mui/icons-material';
+import { Browser } from '@renderer/services/supabase/types';
 
 const ipcRenderer = window.electron.ipcRenderer;
 
 interface LaunchBrowserButtonProps {
-  browserID: BrowserID;
+  browser: Browser;
   username: string;
   password: string;
   securityAnswer?: string;
 }
 
 export const LaunchBrowserButton: React.FC<LaunchBrowserButtonProps> = ({
-  browserID,
+  browser,
   username,
   password,
   securityAnswer,
@@ -22,8 +23,7 @@ export const LaunchBrowserButton: React.FC<LaunchBrowserButtonProps> = ({
 
   const handleLaunch = () => {
     setStatus(ProcessStatus.LOADING);
-    ipcRenderer.send('create-login-browser', browserID, username, password, securityAnswer);
-    console.log('sending:', { browserID, username, password, securityAnswer });
+    ipcRenderer.send('create-login-browser', browser.id, username, password, securityAnswer);
   };
 
   useEffect(() => {
@@ -32,8 +32,7 @@ export const LaunchBrowserButton: React.FC<LaunchBrowserButtonProps> = ({
       receivedBrowserID: BrowserID,
       processStatus: ProcessStatus,
     ) => {
-      console.log({ receivedBrowserID, processStatus, browserID });
-      if (receivedBrowserID === browserID) {
+      if (receivedBrowserID === browser.id) {
         console.log(`Received process status: ${processStatus}`);
         setStatus(processStatus);
         if (processStatus === ProcessStatus.COMPLETE) {
@@ -67,7 +66,7 @@ export const LaunchBrowserButton: React.FC<LaunchBrowserButtonProps> = ({
         onClick={handleLaunch}
         disabled={[ProcessStatus.LOADING, ProcessStatus.COMPLETE].includes(status)}
       >
-        {browserID}
+        {browser.name}
       </Button>
       {status === ProcessStatus.LOADING && <CircularProgress />}
 
