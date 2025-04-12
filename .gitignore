@@ -7,4 +7,5 @@ out
 venv/
 
 supabase/seed.sql
+supabase/config/database.yml
 .env
