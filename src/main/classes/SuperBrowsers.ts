@@ -19,7 +19,7 @@ const launchBrowser = <T extends Record<string, any>>(
   const { loginHeadless, loginUI } = SuperBrowsers.createLoginPair(config.loginURL);
   const mainWindow = SuperBrowsers.getMainWindow();
 
-  loginHeadless.webContents.on('did-finish-load', async () => {
+  loginHeadless.webContents.once('did-finish-load', async () => {
     await handleSteps(config, argObject, loginHeadless, loginUI, mainWindow);
   });
 
@@ -63,14 +63,14 @@ export class SuperBrowsers {
    *
    * The `loginUI` window will load a local HTML file or a development server URL depending on the environment.
    * In development mode, the DevTools will be opened automatically for the `loginUI` window.
-   * Dev should use loginHeadless.on('did-finish-load') to dictate the login process
+   * Dev should use loginHeadless.once('did-finish-load') to dictate the login process
    */
   static createLoginPair(loginURL: string) {
     const loginHeadless = SuperBrowser.create(
       {
         width: 1500,
         height: 1000,
-        show: debugMode,
+        show: false,
         backgroundColor: 'black',
         webPreferences: {
           preload: join(__dirname, '../preload/index.mjs'),
@@ -85,7 +85,7 @@ export class SuperBrowsers {
       {
         width: 800,
         height: 500,
-        show: debugMode,
+        show: false,
         backgroundColor: 'black',
         webPreferences: {
           preload: join(__dirname, '../preload/index.mjs'),
@@ -133,10 +133,6 @@ export class SuperBrowsers {
     console.log({ securityAnswer });
     const browserConfig = browserConfigs.find((config) => config.browserID === browserID);
     if (!browserConfig) {
-      // loginUI.webContents.send(
-      //   'login-update',
-      //   `Browser Config does not exist for browserID: ${browserID}`,
-      // );
       SuperBrowsers.mainWindow.webContents.send(
         'browser-window-creation',
         browserID,
@@ -146,9 +142,7 @@ export class SuperBrowsers {
     }
     const { loginHeadless, loginUI } = launchBrowser(browserConfig, { username, password });
     SuperBrowsers.addBrowser(loginHeadless);
-    if (loginUI) {
-      SuperBrowsers.addBrowser(loginUI);
-    }
+    SuperBrowsers.addBrowser(loginUI);
 
     if (is.dev && debugMode) {
       loginHeadless.webContents.openDevTools(); // Open DevTools here

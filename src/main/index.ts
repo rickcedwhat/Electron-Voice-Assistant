@@ -5,11 +5,27 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils';
 import icon from '../../resources/icon.png?asset';
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import { SuperBrowsers } from '../main/classes/SuperBrowsers';
+import { getEnv } from '../shared/utils';
+
+// Declare the DEBUG_MODE environment variable type (optional but good practice)
+declare global {
+  namespace NodeJS {
+    interface ProcessEnv {
+      DEBUG_MODE?: string;
+    }
+  }
+}
+
+export const debugMode = getEnv('DEBUG_MODE') === 'true';
+if (debugMode) {
+  console.log('Debug mode is enabled!');
+} else {
+  console.log('Debug mode is disabled.');
+}
 
 let pythonProcess: ChildProcessWithoutNullStreams; // Store the Python process object
 let mainWindow: BrowserWindow | null = null;
 export const thirdPartyWindows: (BrowserWindow | null)[] = []; // Array to store third-party windows
-export const debugMode = is.dev ? true : false; // is.dev ? current option : false;
 
 const startPythonServer = () => {
   const pythonScriptPath = join(app.getAppPath(), 'backend', 'websocket_server.py'); // Adjust 'backend' if needed

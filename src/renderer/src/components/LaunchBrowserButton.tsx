@@ -59,22 +59,21 @@ export const LaunchBrowserButton: React.FC<LaunchBrowserButtonProps> = ({
     return;
   }, [status]);
   return (
-    <>
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={handleLaunch}
-        disabled={[ProcessStatus.LOADING, ProcessStatus.COMPLETE].includes(status)}
-      >
-        {browser.name}
-      </Button>
-      {status === ProcessStatus.LOADING && <CircularProgress />}
-
-      {status === ProcessStatus.COMPLETE && <CheckCircleOutlineIcon color="success" />}
-      <Typography variant="body1" textTransform={'capitalize'}>
-        {status}
-      </Typography>
-      <br />
-    </>
+    <Button
+      variant="contained"
+      color={status === ProcessStatus.ERROR ? 'error' : 'primary'}
+      size="small"
+      onClick={handleLaunch}
+      disabled={[ProcessStatus.LOADING, ProcessStatus.COMPLETE].includes(status)}
+      endIcon={
+        status === ProcessStatus.LOADING ? (
+          <CircularProgress size={20} color="inherit" />
+        ) : status === ProcessStatus.COMPLETE ? (
+          <CheckCircleOutlineIcon color="success" />
+        ) : null
+      }
+    >
+      {browser.name}
+    </Button>
   );
 };
