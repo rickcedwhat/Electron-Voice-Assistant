@@ -1,0 +1,134 @@
+{
+  "title": "Dividend Growth Model and Market Efficiency",
+  "problem_parts": [
+    {
+      "type": "text",
+      "value": "You read in the paper that Summit Systems will pay a dividend of $",
+      "format": {}
+    },
+    {
+      "type": "input",
+      "value": 1.66,
+      "id": "dividend_y1",
+      "format": {}
+    },
+    {
+      "type": "text",
+      "value": " this year. At that point, you expected Summit Systems' dividend to grow by ",
+      "format": {}
+    },
+    {
+      "type": "input",
+      "value": 6.3,
+      "id": "growth_rate_old",
+      "format": {}
+    },
+    {
+      "type": "text",
+      "value": "% per year. Today, you read in the paper that Summit Systems has revised its growth prospects and expects its dividends to grow at a rate of ",
+      "format": {}
+    },
+    {
+      "type": "input",
+      "value": 2.3,
+      "id": "growth_rate_new",
+      "format": {}
+    },
+    {
+      "type": "text",
+      "value": "% per year forever. The firm's equity cost of capital is ",
+      "format": {}
+    },
+    {
+      "type": "input",
+      "value": 12.1,
+      "id": "cost_of_capital",
+      "format": {}
+    },
+    {
+      "type": "text",
+      "value": "%.",
+      "format": {
+        "newLineAfter": true
+      }
+    },
+    {
+      "type": "text",
+      "value": "a. What is the value of a share of Summit Systems stock based on the original expected dividend growth of 6.3% per year?",
+      "format": {
+        "isBold": true,
+        "newLineAfter": true
+      }
+    },
+    {
+      "type": "text",
+      "value": "The value of a share of Summit Systems stock is $",
+      "format": {}
+    },
+    {
+      "type": "answer_placeholder",
+      "value": null,
+      "id": "stock_price_old",
+      "format": {}
+    },
+    {
+      "type": "text",
+      "value": ". (Round to the nearest cent.)",
+      "format": {
+        "newLineAfter": true
+      }
+    },
+    {
+      "type": "text",
+      "value": "",
+      "format": {
+        "newLineAfter": true
+      }
+    },
+    {
+      "type": "text",
+      "value": "b. If you tried to sell your Summit Systems stock after reading this news, what price would you be likely to get? Why? (Select the best choice below.)",
+      "format": {
+        "isBold": true,
+        "newLineAfter": true
+      }
+    },
+    {
+      "type": "answer_placeholder",
+      "value": null,
+      "id": "market_reaction_mc",
+      "format": {
+        "newLineAfter": true
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "stock_price_old": {
+        "decimals": 2,
+        "js_fn": "dividend_y1 / ( (cost_of_capital / 100) - (growth_rate_old / 100) )"
+      },
+      "market_reaction_mc": {
+        "options": [
+          {
+            "id": "A",
+            "text": "You would receive $28.62 because when you bought the stock, the dividend growth rate was still 6.3%."
+          },
+          {
+            "id": "B",
+            "text": "You would receive $16.94 because markets are efficient and would incorporate the information about the new growth rate immediately."
+          },
+          {
+            "id": "C",
+            "text": "You would receive $28.62 if you act very quickly because it takes a day or two for markets to incorporate the information about the new growth rate."
+          },
+          {
+            "id": "D",
+            "text": "You would receive a price between $16.94 and $28.62 because you should get a blend of the old and new growth rate of dividends."
+          }
+        ],
+        "js_fn": "// Based on Efficient Market Hypothesis, the price should immediately reflect the new growth rate.\n// let price_new = dividend_y1 / ( (cost_of_capital / 100) - (growth_rate_new / 100) ); \n// Option B corresponds to the price calculated with the new growth rate (approx 16.94) and the EMH rationale.\nreturn 'B';"
+      }
+    }
+  ]
+}

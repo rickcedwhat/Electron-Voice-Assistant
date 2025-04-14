@@ -3,6 +3,7 @@ import { ProcessStatus } from '@shared/types';
 import { useState, useEffect } from 'react';
 import { CheckCircleOutline as CheckCircleOutlineIcon } from '@mui/icons-material';
 import { Browser, BrowserID } from '@shared/services/supabase/types';
+import { toast } from 'react-toastify';
 
 const ipcRenderer = window.electron.ipcRenderer;
 
@@ -35,13 +36,18 @@ export const LaunchBrowserButton: React.FC<LaunchBrowserButtonProps> = ({
       if (receivedBrowserID === browser.id) {
         console.log(`Received process status: ${processStatus}`);
         setStatus(processStatus);
-        if (processStatus === ProcessStatus.COMPLETE) {
-          ipcRenderer.removeAllListeners('browser-window-creation');
+        switch (processStatus) {
+          case ProcessStatus.ERROR:
+            ipcRenderer.removeAllListeners('browser-window-creation');
+            toast.error("Couldn't launch browser");
+            break;
+          case ProcessStatus.COMPLETE:
+            ipcRenderer.removeAllListeners('browser-window-creation');
+            break;
         }
       }
     };
 
-    console.log({ ipcRenderer });
     ipcRenderer.on('browser-window-creation', browserWindowCreationListener);
 
     return () => {
@@ -50,7 +56,7 @@ export const LaunchBrowserButton: React.FC<LaunchBrowserButtonProps> = ({
   });
 
   useEffect(() => {
-    if (status === ProcessStatus.COMPLETE) {
+    if ([ProcessStatus.COMPLETE, ProcessStatus.ERROR].includes(status)) {
       const timer = setTimeout(() => {
         setStatus(ProcessStatus.INACTIVE);
       }, 5000); // Reset status after 1 seconds

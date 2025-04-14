@@ -4,13 +4,14 @@ import { SuperBrowser } from './SuperBrowser';
 import { join } from 'path';
 import { is } from '@electron-toolkit/utils';
 import { debugMode } from '..';
+import { handleSteps } from '../steps';
+import { ProcessStatus } from '../../shared/types';
 import { LoginBrowserConfig } from '../loginBrowserConfigs';
 import { pearsonConfig } from '../loginBrowserConfigs/pearsonConfig';
-import { handleSteps } from '../steps';
 import { canvasFIUConfig } from '../loginBrowserConfigs/canvasFIUConfig';
-import { ProcessStatus } from '../../shared/types';
+import { cybertextConfig } from '../loginBrowserConfigs/cybertextConfig';
 
-const browserConfigs = [pearsonConfig, canvasFIUConfig];
+const browserConfigs = [pearsonConfig, canvasFIUConfig, cybertextConfig];
 
 const launchBrowser = <T extends Record<string, any>>(
   config: LoginBrowserConfig<T>,
@@ -70,7 +71,7 @@ export class SuperBrowsers {
       {
         width: 1500,
         height: 1000,
-        show: false,
+        show: debugMode,
         backgroundColor: 'black',
         webPreferences: {
           preload: join(__dirname, '../preload/index.mjs'),

@@ -9,6 +9,7 @@ import { RouterProvider, createRouter } from '@tanstack/react-router';
 
 // Import the generated route tree
 import { routeTree } from './routeTree.gen';
+import { ToastContainer } from 'react-toastify';
 
 const queryClient = new QueryClient();
 
@@ -37,7 +38,7 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={darkTheme}>
-        {/* <App /> */}
+        <ToastContainer />
         <RouterProvider router={router} />
       </ThemeProvider>
     </QueryClientProvider>
