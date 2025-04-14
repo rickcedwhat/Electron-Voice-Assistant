@@ -1,338 +1,36 @@
 {
-  "title": "Comparable Valuation Analysis",
+  "title": "Dividend Discount Model Valuation",
   "problem_parts": [
+    { "type": "text", "value": "Procter & Gamble (PG) paid an annual dividend of $" },
+    { "type": "input", "value": 3.85, "id": "input_1" },
+    { "type": "text", "value": " in 2021. You expect PG to increase its dividends by " },
+    { "type": "input", "value": 7.4, "id": "input_2" },
+    { "type": "text", "value": "% per year for the next " },
+    { "type": "input", "value": 5, "id": "input_3" },
+    { "type": "text", "value": " five years (through " },
+    { "type": "input", "value": 2026, "id": "input_4" },
+    { "type": "text", "value": "), and thereafter by " },
+    { "type": "input", "value": 3.2, "id": "input_5" },
     {
       "type": "text",
-      "value": "In addition to footwear, Kenneth Cole Productions designs and sells handbags, apparel, and other accessories. You decide, therefore, to consider comparables for KCP outside the footwear industry. You also know the following about KCP: it has sales of $",
-      "format": {}
+      "value": "% per year. If the appropriate equity cost of capital for Procter & Gamble is "
     },
-    {
-      "type": "input",
-      "value": 522000000,
-      "id": "input_1",
-      "format": {}
-    },
+    { "type": "input", "value": 5.7, "id": "input_6" },
     {
       "type": "text",
-      "value": " million, EBITDA of $",
-      "format": {}
+      "value": "% per year, use the dividend-discount model to estimate its value per share at the end of "
     },
-    {
-      "type": "input",
-      "value": 53100000,
-      "id": "input_2",
-      "format": {}
-    },
-    {
-      "type": "text",
-      "value": " million, excess cash of $",
-      "format": {}
-    },
-    {
-      "type": "input",
-      "value": 92000000,
-      "id": "input_3",
-      "format": {}
-    },
-    {
-      "type": "text",
-      "value": " million, $",
-      "format": {}
-    },
-    {
-      "type": "input",
-      "value": 5000000,
-      "id": "input_4",
-      "format": {}
-    },
-    {
-      "type": "text",
-      "value": " million of debt, EPS of $",
-      "format": {}
-    },
-    {
-      "type": "input",
-      "value": 1.64,
-      "id": "input_5",
-      "format": {}
-    },
-    {
-      "type": "text",
-      "value": ", book value of equity of $",
-      "format": {}
-    },
-    {
-      "type": "input",
-      "value": 10.43,
-      "id": "input_6",
-      "format": {}
-    },
-    {
-      "type": "text",
-      "value": " per share, and ",
-      "format": {}
-    },
-    {
-      "type": "input",
-      "value": 18000000,
-      "id": "input_7",
-      "format": {}
-    },
-    {
-      "type": "text",
-      "value": " million shares outstanding.",
-      "format": {
-        "newLineAfter": true
-      }
-    },
-    {
-      "type": "text",
-      "value": "a. Suppose that Fossil, Inc., has an enterprise value to EBITDA multiple of ",
-      "format": {
-        "isBold": true
-      }
-    },
-    {
-      "type": "input",
-      "value": 9.53,
-      "id": "input_8",
-      "format": {
-        "isBold": true
-      }
-    },
-    {
-      "type": "text",
-      "value": " and a P/E multiple of ",
-      "format": {
-        "isBold": true
-      }
-    },
-    {
-      "type": "input",
-      "value": 18.48,
-      "id": "input_9",
-      "format": {
-        "isBold": true
-      }
-    },
-    {
-      "type": "text",
-      "value": ". What share price would you estimate for KCP using each of these multiples, based on the data for KCP?",
-      "format": {
-        "isBold": true,
-        "newLineAfter": true
-      }
-    },
-    {
-      "type": "text",
-      "value": "b. Suppose that Tommy Hilfiger Corporation has an enterprise value to EBITDA multiple of ",
-      "format": {
-        "isBold": true
-      }
-    },
-    {
-      "type": "input",
-      "value": 8.42,
-      "id": "input_10",
-      "format": {
-        "isBold": true
-      }
-    },
-    {
-      "type": "text",
-      "value": " and a P/E multiple of ",
-      "format": {
-        "isBold": true
-      }
-    },
-    {
-      "type": "input",
-      "value": 17.23,
-      "id": "input_11",
-      "format": {
-        "isBold": true
-      }
-    },
-    {
-      "type": "text",
-      "value": ". What share price would you estimate for KCP using each of these multiples based on the data for KCP?",
-      "format": {
-        "isBold": true,
-        "newLineAfter": true
-      }
-    },
-    {
-      "type": "text",
-      "value": "---",
-      "format": {
-        "newLineAfter": true,
-        "textAlign": "center"
-      }
-    },
-    {
-      "type": "text",
-      "value": "a. Suppose that Fossil, Inc., has an enterprise value to EBITDA multiple of ",
-      "format": {
-        "isBold": true
-      }
-    },
-    {
-      "type": "input",
-      "value": 9.53,
-      "id": "input_8_dup1",
-      "format": {
-        "isBold": true
-      }
-    },
-    {
-      "type": "text",
-      "value": " and a P/E multiple of ",
-      "format": {
-        "isBold": true
-      }
-    },
-    {
-      "type": "input",
-      "value": 18.48,
-      "id": "input_9_dup1",
-      "format": {
-        "isBold": true
-      }
-    },
-    {
-      "type": "text",
-      "value": ". What share price would you estimate for KCP using each of these multiples, based on the data for KCP?",
-      "format": {
-        "isBold": true,
-        "newLineAfter": true
-      }
-    },
-    {
-      "type": "text",
-      "value": "Using the enterprise value to EBITDA ratio for Fossil, Inc., the price is $",
-      "format": {}
-    },
-    {
-      "type": "answer_placeholder",
-      "value": null,
-      "id": "ans_1",
-      "format": {}
-    },
-    {
-      "type": "text",
-      "value": ". (Round to the nearest cent.)",
-      "format": {
-        "newLineAfter": true
-      }
-    },
-    {
-      "type": "text",
-      "value": "Using the P/E ratio for Fossil, Inc., the price is $",
-      "format": {}
-    },
-    {
-      "type": "answer_placeholder",
-      "value": null,
-      "id": "ans_2",
-      "format": {}
-    },
-    {
-      "type": "text",
-      "value": ". (Round to the nearest cent.)",
-      "format": {
-        "newLineAfter": true
-      }
-    },
-    {
-      "type": "text",
-      "value": "b. Suppose that Tommy Hilfiger Corporation has an enterprise value to EBITDA multiple of ",
-      "format": {
-        "isBold": true
-      }
-    },
-    {
-      "type": "input",
-      "value": 8.42,
-      "id": "input_10_dup1",
-      "format": {
-        "isBold": true
-      }
-    },
-    {
-      "type": "text",
-      "value": " and a P/E multiple of ",
-      "format": {
-        "isBold": true
-      }
-    },
-    {
-      "type": "input",
-      "value": 17.23,
-      "id": "input_11_dup1",
-      "format": {
-        "isBold": true
-      }
-    },
-    {
-      "type": "text",
-      "value": ". What share price would you estimate for KCP using each of these multiples based on the data for KCP?",
-      "format": {
-        "isBold": true,
-        "newLineAfter": true
-      }
-    },
-    {
-      "type": "text",
-      "value": "Using the enterprise value to EBITDA ratio for Tommy Hilfiger Corporation, the price is $",
-      "format": {}
-    },
-    {
-      "type": "answer_placeholder",
-      "value": null,
-      "id": "ans_3",
-      "format": {}
-    },
-    {
-      "type": "text",
-      "value": ". (Round to the nearest cent.)",
-      "format": {
-        "newLineAfter": true
-      }
-    },
-    {
-      "type": "text",
-      "value": "Using the P/E ratio for Tommy Hilfiger Corporation, the price is $",
-      "format": {}
-    },
-    {
-      "type": "answer_placeholder",
-      "value": null,
-      "id": "ans_4",
-      "format": {}
-    },
-    {
-      "type": "text",
-      "value": ". (Round to the nearest cent.)",
-      "format": {}
-    }
+    { "type": "input", "value": 2021, "id": "input_7" },
+    { "type": "text", "value": ".", "format": { "newLineAfter": true } },
+    { "type": "text", "value": "The price per share is $", "format": { "newLineAfter": true } },
+    { "type": "answer_placeholder", "value": null, "id": "answer_1" },
+    { "type": "text", "value": ". (Round to the nearest cent.)" }
   ],
   "formulas": [
     {
-      "ans_1": {
+      "answer_1": {
         "decimals": 2,
-        "js_fn": "((input_2 * input_8) - input_4 + input_3) / input_7"
-      },
-      "ans_2": {
-        "decimals": 2,
-        "js_fn": "input_5 * input_9"
-      },
-      "ans_3": {
-        "decimals": 2,
-        "js_fn": "((input_2 * input_10) - input_4 + input_3) / input_7"
-      },
-      "ans_4": {
-        "decimals": 2,
-        "js_fn": "input_5 * input_11"
+        "js_fn": "(() => { const D0 = input_1; const g1 = input_2 / 100; const N = input_3; const g2 = input_5 / 100; const r = input_6 / 100; let pvDividends = 0; let lastDividendHighGrowth = D0; for (let t = 1; t <= N; t++) { const Dt = D0 * Math.pow(1 + g1, t); pvDividends += Dt / Math.pow(1 + r, t); if (t === N) { lastDividendHighGrowth = Dt; } } const D_N_plus_1 = lastDividendHighGrowth * (1 + g2); const P_N = D_N_plus_1 / (r - g2); const pvTerminalValue = P_N / Math.pow(1 + r, N); const P0 = pvDividends + pvTerminalValue; return P0; })()"
       }
     }
   ]

@@ -3,15 +3,17 @@ import argparse
 import os
 import sys
 import re # For filename sanitization
-# --- ADDED IMPORTS ---
 import webbrowser
 import pathlib
-# --- END ADDED IMPORTS ---
 
 def generate_html_from_json(json_data):
     title = json_data.get("title", "Generated Content")
     problem_parts = json_data.get("problem_parts", [])
-    formulas = json_data.get("formulas", []) # Assuming formulas is a list containing one dict
+    # Ensure formulas is handled correctly, assuming it's a list containing one dict
+    formulas_group = {}
+    if isinstance(json_data.get("formulas"), list) and len(json_data["formulas"]) > 0:
+        if isinstance(json_data["formulas"][0], dict):
+            formulas_group = json_data["formulas"][0]
 
     html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -20,93 +22,57 @@ def generate_html_from_json(json_data):
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{title}</title>
     <style>
-        body {{
-            font-family: sans-serif;
-            line-height: 1.6;
-            margin: 20px;
-            background-color: #f4f4f4;
-            color: #333;
-        }}
-        .container {{
-            background-color: #fff;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            max-width: 800px;
-            margin: auto;
-        }}
-        h1 {{
-            color: #2c3e50;
-            text-align: center;
-            margin-bottom: 20px;
-        }}
-        .problem-part {{
-            position: relative;
-            display: inline-block;
-            vertical-align: baseline;
-            padding: 1px 2px;
-            margin: 0 1px;
-            border-radius: 3px;
-            transition: background-color 0.2s ease-in-out, border 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-            box-sizing: border-box;
-        }}
-        .problem-text {{
-             display: inline;
-             padding: 0;
-             margin: 0;
-             border-radius: 0;
-        }}
-        input[type="number"].inline-input {{
-            -moz-appearance: textfield;
-            appearance: textfield;
-            border: 1px solid #ccc;
-            outline: none;
-            font-weight: normal;
-            color: #0d1570;
-            background-color: #ebecfc;
-            min-width: 25px;
-            width: auto; /* Adjust if specific width needed */
-            text-align: right;
-            vertical-align: baseline;
-            font-family: inherit;
-            font-size: inherit;
-            line-height: inherit;
-            padding: 2px 4px;
-            box-sizing: border-box;
-        }}
-        input[type='number'].inline-input::-webkit-outer-spin-button,
-        input[type='number'].inline-input::-webkit-inner-spin-button {{
-            -webkit-appearance: none;
-            margin: 0;
-        }}
-        .answer-output {{
-            font-weight: bold;
-            color: #086830;
-            background-color: #e8f8f5;
-            padding: 2px 4px;
-            min-width: 25px;
-            text-align: right;
-            cursor: pointer;
-            display: inline-block;
-            vertical-align: baseline;
-            border-radius: 3px;
-             box-sizing: border-box;
-        }}
-        .highlight {{
-            background-color: #fff3cd !important;
-            border: 1px solid #ffeeba !important;
-            outline: 1px solid #ffeeba;
-            box-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
-        }}
-        input.highlight {{
-             border: 1px solid #ffc107 !important;
-        }}
-        .question-section {{ margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px dashed #eee; }}
-        .question-section:last-child {{ border-bottom: none; }}
+        /* General Styles */
+        body {{ font-family: sans-serif; line-height: 1.6; margin: 20px; background-color: #f4f4f4; color: #333; }}
+        .container {{ background-color: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 800px; margin: auto; }}
+        h1 {{ color: #2c3e50; text-align: center; margin-bottom: 20px; }}
+        /* Problem Part Base */
+        .problem-part {{ position: relative; display: inline-block; vertical-align: baseline; padding: 1px 2px; margin: 0 1px; border-radius: 3px; transition: background-color 0.2s ease-in-out, border 0.2s ease-in-out, box-shadow 0.2s ease-in-out; box-sizing: border-box; }}
+        .problem-text {{ display: inline; padding: 0; margin: 0; border-radius: 0; }}
+        /* Input Styling */
+        input[type="number"].inline-input {{ -moz-appearance: textfield; appearance: textfield; border: 1px solid #ccc; outline: none; font-weight: normal; color: #0d1570; background-color: #ebecfc; min-width: 25px; width: auto; text-align: right; vertical-align: baseline; font-family: inherit; font-size: inherit; line-height: inherit; padding: 2px 4px; box-sizing: border-box; }}
+        input[type='number'].inline-input::-webkit-outer-spin-button, input[type='number'].inline-input::-webkit-inner-spin-button {{ -webkit-appearance: none; margin: 0; }}
+        /* Answer Placeholder Styling */
+        .answer-output {{ font-weight: bold; color: #086830; background-color: #e8f8f5; padding: 2px 4px; min-width: 25px; text-align: right; cursor: pointer; display: inline-block; vertical-align: baseline; border-radius: 3px; box-sizing: border-box; }}
+        /* Table Styling */
         table {{ width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 10px; }}
         th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
         th {{ background-color: #f2f2f2; font-weight: bold; }}
         .table-container {{ margin-bottom: 15px; display: block; }}
+
+       #calculation-tooltip {{
+           display: none; /* Hidden by default */
+           position: absolute;
+           border: 1px solid #bbb;
+           background-color: #fefefe;
+           color: #333;
+           padding: 10px;
+           border-radius: 5px;
+           box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+           z-index: 1000; /* Ensure it's on top */
+           /* REMOVED pointer-events: none; */
+           white-space: pre-wrap;
+           font-family: monospace;
+           font-size: 0.85em;
+           max-width: 400px;
+       }}
+
+       /* Style for the close button inside the tooltip */
+       .tooltip-close-btn {{
+           position: absolute;
+           top: 2px;
+           right: 5px;
+           background: none;
+           border: none;
+           font-size: 1.1em;
+           font-weight: bold;
+           cursor: pointer;
+           color: #888;
+           padding: 0 2px;
+       }}
+       .tooltip-close-btn:hover {{
+           color: #333;
+       }}
     </style>
 </head>
 <body>
@@ -114,7 +80,7 @@ def generate_html_from_json(json_data):
         <h1 id="main-title">{title}</h1>
         <div id="problem-content">
 """
-    # --- HTML Generation for problem parts (robust version) ---
+    # --- HTML Generation Loop ---
     for part in problem_parts:
         part_classes = ["problem-part"]
         style = ""
@@ -126,7 +92,7 @@ def generate_html_from_json(json_data):
 
         if part_format.get("textAlign"): style += f"text-align: {part_format['textAlign']};"
         if part_format.get("isBold"): style += "font-weight: bold;"
-        if part_format.get("width"): style += f"width: {part_format['width']}px;"
+        if part_format.get("width"): style += f"width: {part_format['width']}px;" # Assuming px
 
         if part_type == "text":
             part_classes.append("problem-text")
@@ -138,13 +104,13 @@ def generate_html_from_json(json_data):
             html += f'<input type="number" {part_id_attr} value="{input_value}" step="any" class="{" ".join(part_classes)}" style="{style}">'
         elif part_type == "answer_placeholder":
             part_classes.append("answer-output")
-            html += f'<span {part_id_attr} class="{" ".join(part_classes)}" style="{style}" data-references="[]">...</span>'
+            # Removed data-references here, calculated on hover now if needed
+            html += f'<span {part_id_attr} class="{" ".join(part_classes)}" style="{style}">...</span>'
         elif part_type == "table":
-             part_classes.append("table-container")
-             html += f'<div class="{" ".join(part_classes)}" {part_id_attr} style="{style}">'
-             html += "<table>"
-             table_rows = part_value if isinstance(part_value, list) else []
-             for row_part in table_rows:
+            part_classes.append("table-container")
+            html += f'<div class="{" ".join(part_classes)}" {part_id_attr} style="{style}"><table>'
+            table_rows = part_value if isinstance(part_value, list) else []
+            for row_part in table_rows:
                  if not isinstance(row_part, dict): continue
                  html += "<tr>"
                  is_header = row_part.get("isHeader", False)
@@ -158,18 +124,18 @@ def generate_html_from_json(json_data):
                      tag = "th" if is_header else "td"
                      html += f'<{tag} style="{cell_style}">{cell_value}</{tag}>'
                  html += "</tr>"
-             html += "</table></div>"
+            html += "</table></div>"
 
         if part_format.get("newLineAfter"):
             html += '<div style="clear: both;"></div>'
-    # --- End HTML Generation ---
+    # --- End HTML Loop ---
 
     html += """
-        </div>
-    </div>
+        </div> </div> <div id="calculation-tooltip">Tooltip content goes here</div>
 
     <script type="application/json" id="problem-data-json">
 """
+    # Embed the whole json_data compactly
     html += json.dumps(json_data, indent=None, separators=(',', ':'))
     html += """
     </script>
@@ -182,18 +148,17 @@ def generate_html_from_json(json_data):
         try {
              const jsonDataText = jsonDataElement.textContent || '{}';
              problemData = JSON.parse(jsonDataText);
-             if (!problemData || typeof problemData !== 'object') throw new Error("Parsed data is not a valid object.");
+             if (!problemData || typeof problemData !== 'object') throw new Error("Parsed data is not valid.");
              problemData.problem_parts = problemData.problem_parts || [];
              problemData.formulas = problemData.formulas || [];
         } catch (e) {
              console.error("Failed to parse problem data JSON:", e);
              const container = document.querySelector('.container');
-             if (container) container.innerHTML = '<p style="color: red; font-weight: bold; text-align: center;">Error loading calculation data. Please check the console and the JSON file.</p>';
-             problemData = { title: "Error Loading Data", problem_parts: [], formulas: [] };
+             if (container) container.innerHTML = '<p style="color:red;font-weight:bold;text-align:center;">Error loading calculation data.</p>';
+             problemData = { title: "Error", problem_parts: [], formulas: [] }; // Set empty defaults
              return;
         }
 
-        const problemContentDiv = document.getElementById('problem-content');
         const titleElement = document.getElementById('main-title');
         const inputElements = {};
         const answerElements = {};
@@ -205,7 +170,7 @@ def generate_html_from_json(json_data):
         problemData.problem_parts.forEach(part => {
              if (!part || !part.type || !part.id) return;
              const element = document.getElementById(part.id);
-             if (!element) { console.warn(`Could not find element with ID: ${part.id}`); return; }
+             if (!element) { console.warn(`Element not found: ${part.id}`); return; }
              if (part.type === 'input') {
                  element.addEventListener('input', calculateAnswers);
                  inputElements[part.id] = element;
@@ -214,221 +179,233 @@ def generate_html_from_json(json_data):
              }
         });
 
-        // --- Determine Dependencies for Highlighting ---
-        const allReferenceIds = [...Object.keys(inputElements), ...Object.keys(answerElements)];
-        // Assuming formulas = [ { formulaId1: { ... }, formulaId2: { ... } } ]
-        if (problemData.formulas && problemData.formulas.length > 0) {
-             const formulaGroup = problemData.formulas[0]; // Get the first (and likely only) object in the list
-             for (const formulaId in formulaGroup) {
-                  if (!formulaGroup.hasOwnProperty(formulaId)) continue;
-                  const formula = formulaGroup[formulaId];
-                  const answerElement = answerElements[formulaId];
+        let calculatedValues = {}; // Make sure this is accessible
 
-                  if (formula && typeof formula === 'object' && formula.js_fn && answerElement) {
-                      const dependencies = [];
-                      allReferenceIds.forEach(refId => {
-                          if (refId === formulaId) return;
-                          try {
-                              const regex = new RegExp(`\\b${refId}\\b`);
-                              if (regex.test(formula.js_fn)) dependencies.push(refId);
-                          } catch(e) {
-                              console.error(`Regex error checking dependency "${refId}" in formula "${formulaId}":`, e);
-                          }
-                      });
-                      answerElement.dataset.references = JSON.stringify(dependencies);
-                  } else if (formula && formula.js_fn && !answerElement) {
-                      console.warn(`Formula found for "${formulaId}" but no corresponding answer element.`);
-                  }
-             }
+        // --- Get Tooltip Element ---
+        const tooltipElement = document.getElementById('calculation-tooltip');
+        if (!tooltipElement) { console.error("Tooltip element not found!"); return; }
+
+        // --- Calculate All Potential Dependency IDs Once (as before) ---
+        const allFormulaIds = (problemData.formulas && problemData.formulas.length > 0 && typeof problemData.formulas[0] === 'object') ? Object.keys(problemData.formulas[0]) : [];
+        const allPossibleDepIds = [...Object.keys(inputElements), ...allFormulaIds];
+        const uniqueDepIds = [...new Set(allPossibleDepIds)];
+
+        // --- State for active tooltip ---
+        let activeTooltipTargetId = null;
+
+        // --- Function to close tooltip ---
+        function closeTooltip() {
+            tooltipElement.style.display = 'none';
+            tooltipElement.innerHTML = ''; // Clear content
+            activeTooltipTargetId = null;
         }
 
-        // --- Add Highlighting Event Listeners ---
+        // --- Add Click-Triggered Tooltip Event Listeners ---
         for (const answerId in answerElements) {
-             if (!answerElements.hasOwnProperty(answerId)) continue;
-             const answerElement = answerElements[answerId];
-             answerElement.addEventListener('mouseenter', (event) => {
-                  try {
-                      const dependencies = JSON.parse(event.currentTarget.dataset.references || '[]');
-                      dependencies.forEach(refId => {
-                          const refEl = inputElements[refId] || answerElements[refId];
-                          if (refEl) refEl.classList.add('highlight');
-                      });
-                  } catch (e) { console.error("Ref parse error (enter) for", event.currentTarget.id, ":", e); }
-             });
-             answerElement.addEventListener('mouseleave', (event) => {
-                  try {
-                      const dependencies = JSON.parse(event.currentTarget.dataset.references || '[]');
-                      dependencies.forEach(refId => {
-                          const refEl = inputElements[refId] || answerElements[refId];
-                          if (refEl) refEl.classList.remove('highlight');
-                      });
-                  } catch (e) { console.error("Ref parse error (leave) for", event.currentTarget.id, ":", e); }
-             });
-        }
+            if (!answerElements.hasOwnProperty(answerId)) continue;
+            const answerElement = answerElements[answerId];
 
-        // --- Calculation Function (Handles Intermediate Values) ---
+            answerElement.addEventListener('click', (event) => {
+                const formulaId = event.currentTarget.id;
+
+                // If clicking the currently active element, toggle off
+                if (tooltipElement.style.display === 'block' && activeTooltipTargetId === formulaId) {
+                    closeTooltip();
+                    return;
+                }
+
+                // --- Fetch Formula Data --- (same as before)
+                let formulaData = null;
+                if (problemData.formulas && problemData.formulas.length > 0 && problemData.formulas[0].hasOwnProperty(formulaId)) {
+                     formulaData = problemData.formulas[0][formulaId];
+                }
+
+                let tooltipContent = '';
+                if (!formulaData || !formulaData.js_fn) {
+                    tooltipContent = 'No calculation details available.';
+                } else {
+                    // --- Generate Tooltip Content --- (same as before)
+                    const js_fn = formulaData.js_fn;
+                    const finalResultText = event.currentTarget.textContent;
+                    const dependencyDetails = [];
+                    const currentScope = { ...calculationScope, ...calculatedValues }; // Get up-to-date values
+
+                    uniqueDepIds.forEach(refId => {
+                         if (refId === formulaId) return;
+                         try {
+                             if (js_fn.includes(refId)) { // Simple check
+                                 if (currentScope.hasOwnProperty(refId)) {
+                                     let value = currentScope[refId];
+                                     let displayValue = (typeof value === 'number') ? value.toLocaleString() : value;
+                                     dependencyDetails.push(`${refId}: ${displayValue}`);
+                                 }
+                             }
+                         } catch(e) { /* ignore errors */ }
+                     });
+
+                    // Construct content WITH close button
+                    tooltipContent = `<button class="tooltip-close-btn" title="Close">×</button>`; // Add close button
+                    tooltipContent += `Formula:\n<pre style="margin: 0; padding: 2px 0 5px 0; background-color: #eee; overflow-x: auto;">${js_fn}</pre>\n`;
+                    if (dependencyDetails.length > 0) {
+                        tooltipContent += `Inputs Used:\n${dependencyDetails.join('<br>')}\n`;
+                    }
+                    tooltipContent += `\nFinal Result:\n${finalResultText}`;
+                }
+
+                tooltipElement.innerHTML = tooltipContent; // Set content
+
+                // --- Add listener to the new close button ---
+                const closeBtn = tooltipElement.querySelector('.tooltip-close-btn');
+                if(closeBtn) {
+                    closeBtn.addEventListener('click', closeTooltip);
+                }
+
+                // --- Position Tooltip Relative to Clicked Element ---
+                const rect = event.currentTarget.getBoundingClientRect();
+                // Position below the element, considering scroll position
+                tooltipElement.style.left = `${rect.left + window.scrollX}px`;
+                tooltipElement.style.top = `${rect.bottom + window.scrollY + 5}px`; // 5px below element
+
+                // Handle potential overflow off-screen (simple example)
+                const tooltipRect = tooltipElement.getBoundingClientRect(); // Get size after setting content
+                 if (tooltipRect.right > window.innerWidth) {
+                     tooltipElement.style.left = `${window.innerWidth - tooltipRect.width - 10}px`; // Adjust left if overflowing right
+                 }
+                 if (tooltipRect.left < 0) {
+                      tooltipElement.style.left = `10px`; // Adjust if overflowing left
+                 }
+                 // Add similar check for bottom overflow if needed
+
+                tooltipElement.style.display = 'block'; // Show tooltip
+                activeTooltipTargetId = formulaId; // Mark this as active
+            });
+        } // End loop for adding listeners
+
+        // --- Add listener to close tooltip if clicking outside ---
+         document.addEventListener('click', (event) => {
+             if (tooltipElement.style.display === 'block') {
+                 // Check if the click was outside the tooltip AND outside any answer element
+                 const isClickInsideTooltip = tooltipElement.contains(event.target);
+                 const isClickOnAnswerElement = Object.values(answerElements).some(el => el.contains(event.target));
+
+                 if (!isClickInsideTooltip && !isClickOnAnswerElement) {
+                     closeTooltip();
+                 }
+             }
+         });
+
+        // --- Calculation Function ---
         function calculateAnswers() {
-            // 1. Gather Initial Input Values
-            const calculationScope = {};
+            const localCalculationScope = {}; // Use local scope for initial inputs in this run
             for (const id in inputElements) {
                 if (inputElements.hasOwnProperty(id)) {
-                    calculationScope[id] = Number(inputElements[id].value) || 0;
+                    localCalculationScope[id] = Number(inputElements[id].value) || 0;
                 }
             }
-
-            // 2. Prepare for Calculation
-            const calculatedValues = {};
+            // Reset global calculated values for this run
+            calculatedValues = {};
             let changedInPass;
-            const maxPasses = Object.keys(answerElements).length + (problemData.formulas[0] ? Object.keys(problemData.formulas[0]).length : 0) + 1; // Adjusted maxPasses slightly
+            const maxPasses = uniqueDepIds.length + 1; // Base maxPasses on total IDs
             let pass;
 
-            // *** Define ALL potential dependency IDs (Inputs AND Formula IDs) ***
-            const allPossibleDepIds = [...Object.keys(inputElements)];
-            if (problemData.formulas && problemData.formulas.length > 0) {
-                 allPossibleDepIds.push(...Object.keys(problemData.formulas[0]));
-            }
-            // Remove duplicates just in case
-            const uniqueDepIds = [...new Set(allPossibleDepIds)];
-
-
-            // 3. Iterate to Resolve Dependencies
             for (pass = 0; pass < maxPasses; pass++) {
                 changedInPass = false;
-
                 if (problemData.formulas && problemData.formulas.length > 0) {
                     const formulaGroup = problemData.formulas[0];
                     for (const formulaId in formulaGroup) {
                         if (!formulaGroup.hasOwnProperty(formulaId)) continue;
-                        if (calculatedValues.hasOwnProperty(formulaId)) continue; // Skip if already done
+                        if (calculatedValues.hasOwnProperty(formulaId)) continue;
 
                         const formula = formulaGroup[formulaId];
-
-                        // *** Calculate for ALL formulas, even intermediate ones ***
                         if (formula && typeof formula === 'object' && formula.js_fn) {
-
-                            // *** Get answer element, but don't require it for calculation ***
-                            const answerElement = answerElements[formulaId];
-
+                            const answerElement = answerElements[formulaId]; // May be null for intermediate
                             let result;
                             let canCalculate = true;
-                            const currentScope = { ...calculationScope, ...calculatedValues };
+                            // *** Use combined scope for calculation check ***
+                            const currentCalculationScope = { ...localCalculationScope, ...calculatedValues };
 
-                            // *** Check dependencies against ALL possible IDs ***
+                            // Check dependencies (more robust check)
                             const dependencies = [];
-                            uniqueDepIds.forEach(refId => {
+                             uniqueDepIds.forEach(refId => {
                                 if (refId === formulaId) return;
                                 try {
-                                    // Simple check if formula string includes the ID as a potential variable
-                                    // Using word boundary regex is more robust but complex here
-                                    if (formula.js_fn.includes(refId)) {
-                                         // Basic check: does the formula string potentially reference this ID?
-                                         // More robust: /\b${refId}\b/.test(formula.js_fn)
-                                         // We push even if not yet calculated - check below handles that
+                                     const regex = new RegExp(`\\b${refId}\\b`); // Use regex here
+                                     if (regex.test(formula.js_fn)) {
                                          dependencies.push(refId);
-                                    }
-                                } catch(e) {
-                                     console.error(`Error checking dependency "${refId}" in formula "${formulaId}":`, e);
-                                }
-                            });
+                                     }
+                                } catch(e) { /* ignore regex errors */ }
+                             });
 
-                            // Now check if all found dependencies are actually available in the current scope
-                            dependencies.forEach(depId => {
-                                if (!(depId in currentScope)) {
-                                    canCalculate = false;
-                                }
-                            });
+                            dependencies.forEach(depId => { if (!(depId in currentCalculationScope)) canCalculate = false; });
 
-                            if (!canCalculate) continue; // Skip if dependencies not met
+                            if (!canCalculate) continue;
 
-                            const paramNames = Object.keys(currentScope);
-                            const paramValues = paramNames.map(name => currentScope[name]);
+                            const paramNames = Object.keys(currentCalculationScope);
+                            const paramValues = paramNames.map(name => currentCalculationScope[name]);
 
                             try {
-                                // Dynamic Return Logic (using 'includes' based on previous fix)
                                 let functionBody;
                                 const containsReturn = formula.js_fn.includes(' return ');
-                                if (containsReturn) { functionBody = `"use strict"; ${formula.js_fn}`; }
-                                else {
-                                    const containsSemicolon = formula.js_fn.includes(';');
-                                    if (containsSemicolon) {
-                                        const lastSemicolonIndex = formula.js_fn.lastIndexOf(';');
-                                        if (lastSemicolonIndex !== -1) {
-                                            const part1 = formula.js_fn.substring(0, lastSemicolonIndex + 1);
-                                            const part2 = formula.js_fn.substring(lastSemicolonIndex + 1).trim();
-                                            if (part2) { functionBody = `"use strict"; ${part1} return ${part2};`; }
-                                            else { functionBody = `"use strict"; ${formula.js_fn}`; } // Ends in ;
-                                        } else { functionBody = `"use strict"; return ${formula.js_fn};`; } // Fallback
-                                    } else { functionBody = `"use strict"; return ${formula.js_fn};`; } // Single expression
+                                if (containsReturn) {
+                                     if (formula.js_fn.trim().startsWith('(') && formula.js_fn.trim().endsWith('()')) {
+                                         functionBody = `"use strict"; return ${formula.js_fn};`;
+                                     } else { functionBody = `"use strict"; ${formula.js_fn}`; }
+                                } else {
+                                     const containsSemicolon = formula.js_fn.includes(';');
+                                     if (containsSemicolon) {
+                                         const lastSemicolonIndex = formula.js_fn.lastIndexOf(';');
+                                         if (lastSemicolonIndex !== -1) {
+                                             const part1 = formula.js_fn.substring(0, lastSemicolonIndex + 1);
+                                             const part2 = formula.js_fn.substring(lastSemicolonIndex + 1).trim();
+                                             if (part2) { functionBody = `"use strict"; ${part1} return ${part2};`; }
+                                             else { functionBody = `"use strict"; ${formula.js_fn}`; }
+                                         } else { functionBody = `"use strict"; return ${formula.js_fn};`; }
+                                     } else { functionBody = `"use strict"; return ${formula.js_fn};`; }
                                 }
 
                                 const calculatorFunction = new Function(...paramNames, functionBody);
                                 result = calculatorFunction(...paramValues);
 
-                                // Handle & Store Result (for ALL formulas)
-                                let formattedResult = result; // Result to potentially display
+                                // Handle & Store Result
+                                let formattedResult = result;
                                 let storeResult = true;
 
                                 if (typeof result === 'number') {
-                                    if (!isFinite(result)) {
-                                        formattedResult = isNaN(result) ? '...' : 'Error (Inf)';
-                                        storeResult = false;
-                                    } else {
-                                        // *** Store the raw number for intermediate calculations ***
-                                        calculatedValues[formulaId] = result;
-                                        changedInPass = true; // Mark success for loop control
-
-                                        // *** Format for display ONLY if answerElement exists AND decimals specified ***
+                                    if (!isFinite(result)) { formattedResult = isNaN(result) ? '...' : 'ErrInf'; storeResult = false; }
+                                    else {
+                                        calculatedValues[formulaId] = result; // Store raw number
+                                        changedInPass = true;
                                         if (answerElement && formula.decimals !== undefined) {
                                              formattedResult = Number(result.toFixed(formula.decimals)).toLocaleString(undefined, { minimumFractionDigits: formula.decimals, maximumFractionDigits: formula.decimals });
-                                        } else if (answerElement) {
-                                             // If element exists but no decimals, use default formatting
-                                             formattedResult = result.toLocaleString();
-                                        }
+                                        } else if (answerElement) { formattedResult = result.toLocaleString(); }
                                     }
                                 } else if (typeof result === 'string') {
-                                    calculatedValues[formulaId] = result; // Store string result
-                                    formattedResult = result;
-                                    changedInPass = true;
-                                } else {
-                                    formattedResult = 'Error (Type)';
-                                    storeResult = false;
-                                }
+                                    calculatedValues[formulaId] = result; formattedResult = result; changedInPass = true;
+                                } else { formattedResult = 'ErrType'; storeResult = false; }
 
-                                // *** Display result CONDITIONALLY ***
-                                if (answerElement) {
-                                     answerElement.textContent = formattedResult;
-                                } else if (storeResult) {
-                                     // Optional: Log successful intermediate calculation
-                                     // console.log(`[${formulaId}] Intermediate value calculated:`, result);
-                                }
-
+                                if (answerElement) { answerElement.textContent = formattedResult; }
                                 if (!storeResult) delete calculatedValues[formulaId];
 
                             } catch (error) {
-                                console.error(`[${formulaId}] Error: ${error.message}`);
-                                // *** Display error CONDITIONALLY ***
-                                if (answerElement) {
-                                     answerElement.textContent = 'Error';
-                                }
+                                console.error(`[${formulaId}] Calc Error: ${error.message}`);
+                                if (answerElement) { answerElement.textContent = 'Error'; }
                                 delete calculatedValues[formulaId];
                             }
-                        } // End if formula valid
-                    } // End for each formulaId
-                } // End if problemData.formulas exists
-
+                        }
+                    }
+                }
                 if (!changedInPass) break;
-            } // End for pass loop
-
-            if (pass === maxPasses && changedInPass) {
-                console.warn("Calculation may not have fully resolved (max passes reached).");
             }
-        } // End calculateAnswers function
+            // Update calculationScope for next tooltip hover check AFTER loop finishes
+            calculationScope = { ...localCalculationScope, ...calculatedValues };
+            if (pass === maxPasses && changedInPass) console.warn("Calc resolve warning.");
+        } // End calculateAnswers
 
         // --- Initial Calculation & Final Log ---
         calculateAnswers();
-        console.log("Interactive calculator initialized."); // Final confirmation log
+        console.log("Interactive calculator initialized with tooltips.");
 
-      }); // End DOMContentLoaded listener
+      }); // End DOMContentLoaded
     </script>
 </body>
 </html>
@@ -462,15 +439,10 @@ if __name__ == "__main__":
         print(f"HTML file '{output_path}' created successfully.")
         # --- ADDED: Automatically open the file ---
         try:
-            # Get the absolute path to ensure the URI is correct
             absolute_path = os.path.abspath(output_path)
-            # Use pathlib to create a file URI (e.g., file:///...)
             file_uri = pathlib.Path(absolute_path).as_uri()
             print(f"Attempting to open '{file_uri}' in default web browser (new tab)...")
-            # Open the file URI in a new tab in the default browser
             webbrowser.open(file_uri, new=2)
-        except Exception as e:
-            # Catch potential errors during opening (e.g., no browser configured)
-            print(f"Info: Could not automatically open the file in a browser: {e}")
+        except Exception as e: print(f"Info: Could not automatically open the file in a browser: {e}")
         # --- END ADDED SECTION ---
     except Exception as e: print(f"An error occurred while writing the HTML file: {e}"); sys.exit(1)
