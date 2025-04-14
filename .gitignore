@@ -11,3 +11,4 @@ supabase/config/database.yml
 .env
 
 backend/output/*
+todo.txt

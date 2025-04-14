@@ -1,60 +1,123 @@
 {
-  "title": "Dividend Growth Model and Market Efficiency",
+  "title": "Comparable Valuation Analysis",
   "problem_parts": [
     {
       "type": "text",
-      "value": "You read in the paper that Summit Systems will pay a dividend of $",
+      "value": "In addition to footwear, Kenneth Cole Productions designs and sells handbags, apparel, and other accessories. You decide, therefore, to consider comparables for KCP outside the footwear industry. You also know the following about KCP: it has sales of $",
       "format": {}
     },
     {
       "type": "input",
-      "value": 1.66,
-      "id": "dividend_y1",
+      "value": 522000000,
+      "id": "input_1",
       "format": {}
     },
     {
       "type": "text",
-      "value": " this year. At that point, you expected Summit Systems' dividend to grow by ",
+      "value": " million, EBITDA of $",
       "format": {}
     },
     {
       "type": "input",
-      "value": 6.3,
-      "id": "growth_rate_old",
+      "value": 53100000,
+      "id": "input_2",
       "format": {}
     },
     {
       "type": "text",
-      "value": "% per year. Today, you read in the paper that Summit Systems has revised its growth prospects and expects its dividends to grow at a rate of ",
+      "value": " million, excess cash of $",
       "format": {}
     },
     {
       "type": "input",
-      "value": 2.3,
-      "id": "growth_rate_new",
+      "value": 92000000,
+      "id": "input_3",
       "format": {}
     },
     {
       "type": "text",
-      "value": "% per year forever. The firm's equity cost of capital is ",
+      "value": " million, $",
       "format": {}
     },
     {
       "type": "input",
-      "value": 12.1,
-      "id": "cost_of_capital",
+      "value": 5000000,
+      "id": "input_4",
       "format": {}
     },
     {
       "type": "text",
-      "value": "%.",
+      "value": " million of debt, EPS of $",
+      "format": {}
+    },
+    {
+      "type": "input",
+      "value": 1.64,
+      "id": "input_5",
+      "format": {}
+    },
+    {
+      "type": "text",
+      "value": ", book value of equity of $",
+      "format": {}
+    },
+    {
+      "type": "input",
+      "value": 10.43,
+      "id": "input_6",
+      "format": {}
+    },
+    {
+      "type": "text",
+      "value": " per share, and ",
+      "format": {}
+    },
+    {
+      "type": "input",
+      "value": 18000000,
+      "id": "input_7",
+      "format": {}
+    },
+    {
+      "type": "text",
+      "value": " million shares outstanding.",
       "format": {
         "newLineAfter": true
       }
     },
     {
       "type": "text",
-      "value": "a. What is the value of a share of Summit Systems stock based on the original expected dividend growth of 6.3% per year?",
+      "value": "a. Suppose that Fossil, Inc., has an enterprise value to EBITDA multiple of ",
+      "format": {
+        "isBold": true
+      }
+    },
+    {
+      "type": "input",
+      "value": 9.53,
+      "id": "input_8",
+      "format": {
+        "isBold": true
+      }
+    },
+    {
+      "type": "text",
+      "value": " and a P/E multiple of ",
+      "format": {
+        "isBold": true
+      }
+    },
+    {
+      "type": "input",
+      "value": 18.48,
+      "id": "input_9",
+      "format": {
+        "isBold": true
+      }
+    },
+    {
+      "type": "text",
+      "value": ". What share price would you estimate for KCP using each of these multiples, based on the data for KCP?",
       "format": {
         "isBold": true,
         "newLineAfter": true
@@ -62,13 +125,97 @@
     },
     {
       "type": "text",
-      "value": "The value of a share of Summit Systems stock is $",
+      "value": "b. Suppose that Tommy Hilfiger Corporation has an enterprise value to EBITDA multiple of ",
+      "format": {
+        "isBold": true
+      }
+    },
+    {
+      "type": "input",
+      "value": 8.42,
+      "id": "input_10",
+      "format": {
+        "isBold": true
+      }
+    },
+    {
+      "type": "text",
+      "value": " and a P/E multiple of ",
+      "format": {
+        "isBold": true
+      }
+    },
+    {
+      "type": "input",
+      "value": 17.23,
+      "id": "input_11",
+      "format": {
+        "isBold": true
+      }
+    },
+    {
+      "type": "text",
+      "value": ". What share price would you estimate for KCP using each of these multiples based on the data for KCP?",
+      "format": {
+        "isBold": true,
+        "newLineAfter": true
+      }
+    },
+    {
+      "type": "text",
+      "value": "---",
+      "format": {
+        "newLineAfter": true,
+        "textAlign": "center"
+      }
+    },
+    {
+      "type": "text",
+      "value": "a. Suppose that Fossil, Inc., has an enterprise value to EBITDA multiple of ",
+      "format": {
+        "isBold": true
+      }
+    },
+    {
+      "type": "input",
+      "value": 9.53,
+      "id": "input_8_dup1",
+      "format": {
+        "isBold": true
+      }
+    },
+    {
+      "type": "text",
+      "value": " and a P/E multiple of ",
+      "format": {
+        "isBold": true
+      }
+    },
+    {
+      "type": "input",
+      "value": 18.48,
+      "id": "input_9_dup1",
+      "format": {
+        "isBold": true
+      }
+    },
+    {
+      "type": "text",
+      "value": ". What share price would you estimate for KCP using each of these multiples, based on the data for KCP?",
+      "format": {
+        "isBold": true,
+        "newLineAfter": true
+      }
+    },
+    {
+      "type": "text",
+      "value": "Using the enterprise value to EBITDA ratio for Fossil, Inc., the price is $",
       "format": {}
     },
     {
       "type": "answer_placeholder",
       "value": null,
-      "id": "stock_price_old",
+      "id": "ans_1",
       "format": {}
     },
     {
@@ -80,54 +227,112 @@
     },
     {
       "type": "text",
-      "value": "",
+      "value": "Using the P/E ratio for Fossil, Inc., the price is $",
+      "format": {}
+    },
+    {
+      "type": "answer_placeholder",
+      "value": null,
+      "id": "ans_2",
+      "format": {}
+    },
+    {
+      "type": "text",
+      "value": ". (Round to the nearest cent.)",
       "format": {
         "newLineAfter": true
       }
     },
     {
       "type": "text",
-      "value": "b. If you tried to sell your Summit Systems stock after reading this news, what price would you be likely to get? Why? (Select the best choice below.)",
+      "value": "b. Suppose that Tommy Hilfiger Corporation has an enterprise value to EBITDA multiple of ",
+      "format": {
+        "isBold": true
+      }
+    },
+    {
+      "type": "input",
+      "value": 8.42,
+      "id": "input_10_dup1",
+      "format": {
+        "isBold": true
+      }
+    },
+    {
+      "type": "text",
+      "value": " and a P/E multiple of ",
+      "format": {
+        "isBold": true
+      }
+    },
+    {
+      "type": "input",
+      "value": 17.23,
+      "id": "input_11_dup1",
+      "format": {
+        "isBold": true
+      }
+    },
+    {
+      "type": "text",
+      "value": ". What share price would you estimate for KCP using each of these multiples based on the data for KCP?",
       "format": {
         "isBold": true,
         "newLineAfter": true
       }
     },
     {
+      "type": "text",
+      "value": "Using the enterprise value to EBITDA ratio for Tommy Hilfiger Corporation, the price is $",
+      "format": {}
+    },
+    {
       "type": "answer_placeholder",
       "value": null,
-      "id": "market_reaction_mc",
+      "id": "ans_3",
+      "format": {}
+    },
+    {
+      "type": "text",
+      "value": ". (Round to the nearest cent.)",
       "format": {
         "newLineAfter": true
       }
+    },
+    {
+      "type": "text",
+      "value": "Using the P/E ratio for Tommy Hilfiger Corporation, the price is $",
+      "format": {}
+    },
+    {
+      "type": "answer_placeholder",
+      "value": null,
+      "id": "ans_4",
+      "format": {}
+    },
+    {
+      "type": "text",
+      "value": ". (Round to the nearest cent.)",
+      "format": {}
     }
   ],
   "formulas": [
     {
-      "stock_price_old": {
+      "ans_1": {
         "decimals": 2,
-        "js_fn": "dividend_y1 / ( (cost_of_capital / 100) - (growth_rate_old / 100) )"
+        "js_fn": "((input_2 * input_8) - input_4 + input_3) / input_7"
       },
-      "market_reaction_mc": {
-        "options": [
-          {
-            "id": "A",
-            "text": "You would receive $28.62 because when you bought the stock, the dividend growth rate was still 6.3%."
-          },
-          {
-            "id": "B",
-            "text": "You would receive $16.94 because markets are efficient and would incorporate the information about the new growth rate immediately."
-          },
-          {
-            "id": "C",
-            "text": "You would receive $28.62 if you act very quickly because it takes a day or two for markets to incorporate the information about the new growth rate."
-          },
-          {
-            "id": "D",
-            "text": "You would receive a price between $16.94 and $28.62 because you should get a blend of the old and new growth rate of dividends."
-          }
-        ],
-        "js_fn": "// Based on Efficient Market Hypothesis, the price should immediately reflect the new growth rate.\n// let price_new = dividend_y1 / ( (cost_of_capital / 100) - (growth_rate_new / 100) ); \n// Option B corresponds to the price calculated with the new growth rate (approx 16.94) and the EMH rationale.\nreturn 'B';"
+      "ans_2": {
+        "decimals": 2,
+        "js_fn": "input_5 * input_9"
+      },
+      "ans_3": {
+        "decimals": 2,
+        "js_fn": "((input_2 * input_10) - input_4 + input_3) / input_7"
+      },
+      "ans_4": {
+        "decimals": 2,
+        "js_fn": "input_5 * input_11"
       }
     }
   ]
