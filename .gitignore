@@ -12,3 +12,7 @@ supabase/config/database.yml
 
 backend/output/*
 todo.txt
+
+__pycache__
+
+.venv
