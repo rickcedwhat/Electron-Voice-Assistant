@@ -247,7 +247,7 @@ async def ask_gemini(request: PromptRequest):
         # Use the client.models.generate_content pattern, consistent with the other endpoint
         # Using the same advanced model as the image endpoint, as it handles text-only well.
         # Alternatively, "gemini-1.0-pro" could be used for a standard text model.
-        target_model = "gemini-1.5-flash-latest" # Consistent with the other endpoint
+        target_model = "gemini-2.5-flash-preview-05-20" # Consistent with the other endpoint
         response = client.models.generate_content(
             model=target_model,
             contents=request.prompt # For text-only, contents can be a string
