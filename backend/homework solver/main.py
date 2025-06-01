@@ -1,5 +1,5 @@
 # --- Imports ---
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Header, Depends
 from fastapi.responses import HTMLResponse
 import uvicorn
 from google import genai
@@ -9,6 +9,10 @@ import io
 from PIL import Image
 import json
 import re
+from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware # Make sure this import is present
+
+
 # Assuming your refactored function is here:
 from gemini_to_html import generate_html_from_json
 
@@ -40,21 +44,49 @@ except Exception as e:
 
 app = FastAPI()
 
+origins = [
+    "https://learning.mheducation.com", # Allow your specific homework site
+    "http://localhost", # Often useful for local testing if you have a frontend there
+    "http://127.0.0.1", # Also for local testing
+    # You can add other origins if needed
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins, # More specific than ["*"] for production
+    # allow_origins=["*"], # Allows all origins - USE FOR DEVELOPMENT/TESTING ONLY
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods (GET, POST, OPTIONS, etc.)
+    allow_headers=["*"],  # Allows all headers
+)
+
 # --- Configure Gemini API Key ---
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 if not GOOGLE_API_KEY:
     raise ValueError("GOOGLE_API_KEY environment variable not set.")
+APP_ACCESS_TOKEN = os.getenv("APP_ACCESS_TOKEN")
+if not APP_ACCESS_TOKEN:
+    raise ValueError("APP_ACCESS_TOKEN environment variable not set.")
 
 # --- Initialize Gemini Client ---
 try:
     client = genai.Client(api_key=GOOGLE_API_KEY)
     print("Gemini client initialized successfully.")
 except Exception as e:
-    raise RuntimeError(f"Failed to initialize Gemini client: {e}")
+    raise RuntimeError(f"Failed to initialize Gemini client: {e}") # type: ignore
+
+# --- Authentication Dependency ---
+async def verify_token(x_auth_token: str = Header(None, alias="X-AUTH-TOKEN")):
+    if not x_auth_token:
+        raise HTTPException(status_code=401, detail="Not authenticated: X-AUTH-TOKEN header missing.")
+    if x_auth_token != APP_ACCESS_TOKEN:
+        print(f"Invalid token received. Expected: '{APP_ACCESS_TOKEN[:5]}...', Got: '{x_auth_token[:5]}...'") # Log part of tokens for debugging
+        raise HTTPException(status_code=403, detail="Invalid X-AUTH-TOKEN.")
+    return True
 
 
 # --- API Endpoint ---
-@app.post("/generate-html-from-image/", response_class=HTMLResponse)
+@app.post("/generate-html-from-image/", response_class=HTMLResponse, dependencies=[Depends(verify_token)])
 async def create_html_from_image(image_file: UploadFile = File(...)):
     if not client:
         raise HTTPException(status_code=500, detail="Gemini client not initialized.")
@@ -192,10 +224,84 @@ async def create_html_from_image(image_file: UploadFile = File(...)):
     # *** MODIFIED RETURN STATEMENT ***
     return HTMLResponse(content=html_content, headers=headers)
 
+class PromptRequest(BaseModel):
+    prompt: str
+
+# --- API Endpoint ---
+@app.post("/ask-gemini/", dependencies=[Depends(verify_token)])
+async def ask_gemini(request: PromptRequest):
+    """
+    Receives a prompt, sends it to the Gemini API,
+    and returns the Gemini API's text response.
+    """
+    if not request.prompt:
+        raise HTTPException(status_code=400, detail="Prompt cannot be empty.")
+    
+    if not client: # Ensure client is available
+        raise HTTPException(status_code=500, detail="Gemini client not initialized.")
+
+    try:
+        print(f"Received prompt: {request.prompt[:100]}...") # Log received prompt (first 100 chars)
+
+        # Send the prompt to Gemini
+        # Use the client.models.generate_content pattern, consistent with the other endpoint
+        # Using the same advanced model as the image endpoint, as it handles text-only well.
+        # Alternatively, "gemini-1.0-pro" could be used for a standard text model.
+        target_model = "gemini-1.5-flash-latest" # Consistent with the other endpoint
+        response = client.models.generate_content(
+            model=target_model,
+            contents=request.prompt # For text-only, contents can be a string
+        )
+
+        # --- Process Gemini's Response ---
+        # Ensure the response has text and handle potential blocking
+        if response.candidates:
+            first_candidate = response.candidates[0]
+            if first_candidate.finish_reason.name == "STOP" and first_candidate.content and first_candidate.content.parts:
+                answer_text = "".join(part.text for part in first_candidate.content.parts if hasattr(part, 'text'))
+                if answer_text:
+                    print(f"Gemini Answer: {answer_text[:100]}...") # Log Gemini answer
+                    return {"answer": answer_text}
+                else:
+                    print("Gemini returned a response with no text content.")
+                    raise HTTPException(status_code=500, detail="Gemini returned an empty text response.")
+            else:
+                # Handle cases where the response was blocked or stopped for other reasons
+                blocking_reason = first_candidate.finish_reason.name
+                safety_ratings_str = "N/A"
+                if hasattr(first_candidate, 'safety_ratings'):
+                    safety_ratings_str = str(first_candidate.safety_ratings)
+                detail_msg = f"Gemini API request did not complete successfully. Finish Reason: {blocking_reason}. Safety Ratings: {safety_ratings_str}"
+                print(detail_msg)
+                raise HTTPException(status_code=500, detail=detail_msg)
+        else:
+            # This case should ideally be caught by the finish_reason check above,
+            # but it's a fallback if the response structure is unexpected.
+            # It might also indicate that the prompt itself was blocked by Gemini's prompt-level safety filters
+            # before even generating candidates.
+            prompt_feedback_str = "N/A"
+            if hasattr(response, 'prompt_feedback') and response.prompt_feedback:
+                 prompt_feedback_str = str(response.prompt_feedback)
+            detail_msg = f"Gemini API returned no candidates. This might be due to prompt-level blocking. Prompt Feedback: {prompt_feedback_str}"
+            print(detail_msg)
+            raise HTTPException(status_code=500, detail=detail_msg)
+
+    except genai.types.BlockedPromptException as e:
+        print(f"Gemini API Error: Prompt was blocked. {e}")
+        raise HTTPException(status_code=400, detail=f"Your prompt was blocked by the Gemini API. {e}")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        # Log the full error for debugging on the server
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"An error occurred while communicating with the Gemini API: {str(e)}")
+
+
 # --- Uvicorn runner ---
 if __name__ == "__main__":
     # Make sure 'main' matches the filename (e.g., main.py -> 'main:app')
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
 
 # run this with venv activated to start
+# make sure venv is activated: cd into backend/homework solver and then call .\.venv\Scripts\activate
 # uvicorn main:app --reload
