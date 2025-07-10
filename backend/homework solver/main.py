@@ -119,7 +119,12 @@ async def ask_gemini_vision(request: AskGeminiVisionRequest):
 
         print(f"Sending multi-modal request to Gemini using model: {target_model}...")
         
-        response = client.models.generate_content(
+        # response = client.models.generate_content(
+        #     model=target_model,
+        #     contents=content_parts 
+        # )
+
+        response = await client.models.generate_content_async( # Changed to _async
             model=target_model,
             contents=content_parts 
         )
