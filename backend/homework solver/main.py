@@ -124,7 +124,7 @@ async def ask_gemini_vision(request: AskGeminiVisionRequest):
         #     contents=content_parts 
         # )
 
-        response = await client.generate_content_async(
+        response = await client.aio.models.generate_content(
             model=target_model,
             contents=content_parts 
         )
